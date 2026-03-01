@@ -34,7 +34,7 @@ jobs:
       - name: Zip for deployment
         run: |
           cp -r .next/static .next/standalone/.next/static
-          cp -r public .next/standalone/public
+          [ -d public ] && cp -r public .next/standalone/public || true
           cd .next/standalone
           zip -r ../../deploy.zip .
 

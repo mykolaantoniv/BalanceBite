@@ -32,11 +32,7 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
 
       - name: Zip for deployment
-        run: |
-          zip -r deploy.zip . \
-            --exclude "*.git*" \
-            --exclude "node_modules/*" \
-            --exclude ".env.local"
+        run: zip -r deploy.zip . -x "*.git*" -x "node_modules/*" -x ".env.local"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -73,17 +69,4 @@ jobs:
           app-name: 'balancebite'
           slot-name: 'Production'
           package: .
-```
-
-Also add your secrets to GitHub — **GitHub repo → Settings → Secrets and variables → Actions → New repository secret** for each:
-
-| Secret name | Value |
-|---|---|
-| `NEXTAUTH_URL` | `https://balancebite.azurewebsites.net` |
-| `NEXTAUTH_SECRET` | same as in Azure |
-| `GOOGLE_CLIENT_ID` | your client id |
-| `GOOGLE_CLIENT_SECRET` | your client secret |
-
-Then also update **Azure startup command** back to:
-```
-npm run start
+          

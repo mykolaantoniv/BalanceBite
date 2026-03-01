@@ -6,6 +6,11 @@ const nextConfig = {
       { protocol: 'https', hostname: '*.zakaz.global' },
     ],
   },
+  // Required for Azure - skip prerendering auth pages
+  output: 'standalone',
+  experimental: {
+    missingSuspenseWithCSRBailout: false,
+  },
 }
 
 module.exports = nextConfig

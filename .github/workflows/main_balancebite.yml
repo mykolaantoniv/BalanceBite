@@ -32,11 +32,11 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
 
       - name: Zip for deployment
-              run: |
-                cp -r .next/static .next/standalone/.next/static
-                cp -r public .next/standalone/public
-                cd .next/standalone
-                zip -r ../../deploy.zip .
+        run: |
+          cp -r .next/static .next/standalone/.next/static
+          cp -r public .next/standalone/public
+          cd .next/standalone
+          zip -r ../../deploy.zip .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

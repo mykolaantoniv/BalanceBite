@@ -6,10 +6,20 @@ const nextConfig = {
       { protocol: 'https', hostname: '*.zakaz.global' },
     ],
   },
-  // Required for Azure - skip prerendering auth pages
   output: 'standalone',
   experimental: {
     missingSuspenseWithCSRBailout: false,
+  },
+  // Trust Azure's reverse proxy - needed for NextAuth cookies to work correctly
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Forwarded-Proto', value: 'https' },
+        ],
+      },
+    ]
   },
 }
 

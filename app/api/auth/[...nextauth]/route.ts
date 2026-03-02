@@ -28,6 +28,12 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token }) {
       return token
     },
+    async redirect({ url, baseUrl }) {
+      // Allow relative URLs and same-origin URLs, default to home page
+      if (url.startsWith('/')) return `${baseUrl}${url}`
+      if (url.startsWith(baseUrl)) return url
+      return baseUrl
+    },
   },
   pages: {
     signIn: '/auth/signin',

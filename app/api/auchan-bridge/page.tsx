@@ -3,9 +3,6 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
-const STORE_ID = '48246401'
-const API_BASE = 'https://stores-api.zakaz.ua'
-
 interface CartProduct {
   ean: string
   quantity: number
@@ -13,17 +10,35 @@ interface CartProduct {
 
 type Status = 'waiting' | 'logging-in' | 'filling' | 'done' | 'error'
 
+// All zakaz API calls go through our Next.js proxy to avoid CORS
+async function zakazProxy(path: string, method = 'GET', body?: unknown, zakazCookie?: string) {
+  const res = await fetch('/api/zakaz/proxy', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      path,
+      method,
+      body,
+      headers: zakazCookie ? { Cookie: zakazCookie } : {},
+    }),
+  })
+  return res.json()
+}
+
 function BridgePage() {
   const searchParams = useSearchParams()
   const [status, setStatus] = useState<Status>('waiting')
   const [message, setMessage] = useState('Очікування...')
   const [progress, setProgress] = useState(0)
+  const [zakazCookie, setZakazCookie] = useState<string>('')
 
   useEffect(() => {
-    // Listen for cart data from parent window
+    // Get stored zakaz cookie from localStorage (set when user logs into auchan.zakaz.ua)
+    const stored = localStorage.getItem('zakaz_session')
+    if (stored) setZakazCookie(stored)
+
     function handleMessage(event: MessageEvent) {
       if (event.data?.type !== 'FILL_CART') return
-
       const products: CartProduct[] = event.data.products
       if (!products?.length) {
         setStatus('error')
@@ -31,13 +46,11 @@ function BridgePage() {
         sendResult({ success: false, error: 'No products' })
         return
       }
-
       fillCart(products)
     }
 
     window.addEventListener('message', handleMessage)
 
-    // Also check if products were passed via URL (fallback)
     const encoded = searchParams.get('products')
     if (encoded) {
       try {
@@ -54,65 +67,65 @@ function BridgePage() {
 
   async function fillCart(products: CartProduct[]) {
     try {
-      // Step 1: Check if we have an active session
       setStatus('logging-in')
       setMessage('Перевірка сесії Auchan...')
 
-      const sessionCheck = await fetch(`${API_BASE}/user/login`, {
-        credentials: 'include',
-        headers: {
-          'x-chain': 'auchan',
-          'x-version': '65',
-          'Accept': 'application/json',
-        },
-      })
+      // Check session via proxy
+      const sessionRes = await zakazProxy('/user/login', 'GET', undefined, zakazCookie)
 
-      if (!sessionCheck.ok) {
+      if (!sessionRes.ok) {
         setStatus('error')
         setMessage('Ви не авторизовані в Auchan. Увійдіть на auchan.zakaz.ua та спробуйте знову.')
         sendResult({ success: false, error: 'Not logged in to Auchan' })
         return
       }
 
-      // Step 2: Fill the cart
       setStatus('filling')
       setMessage(`Додаємо ${products.length} товарів...`)
+      setProgress(20)
 
-      // Add items one by one to avoid overwriting
-      let added = 0
-      for (const product of products) {
-        const res = await fetch(`${API_BASE}/stores/${STORE_ID}/cart/`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'x-chain': 'auchan',
-            'x-version': '65',
-            'Origin': 'https://auchan.zakaz.ua',
-          },
-          body: JSON.stringify({
-            products: [{ ean: product.ean, quantity: product.quantity }],
-          }),
-        })
+      // Get delivery presets via proxy
+      const presetsRes = await zakazProxy('/user/delivery_presets/', 'GET', undefined, zakazCookie)
+      const presetsData = presetsRes.data
+      const preset = Array.isArray(presetsData) ? presetsData[0] : presetsData?.results?.[0]
+      const coords = preset?.address?.plan?.coords || { lat: 0, lng: 0 }
 
-        if (res.ok) {
-          added++
-          setProgress(Math.round((added / products.length) * 100))
-          setMessage(`Додано ${added} з ${products.length} товарів...`)
-        }
+      setProgress(40)
 
-        // Small delay to avoid rate limiting
-        await new Promise(r => setTimeout(r, 150))
+      // Get store ID via proxy
+      const storesRes = await zakazProxy(
+        `/stores/?lat=${coords.lat}&lng=${coords.lng}&delivery_type=plan&retail_chain=auchan`,
+        'GET', undefined, zakazCookie
+      )
+      const storeId = storesRes.data?.results?.[0]?.id || process.env.NEXT_PUBLIC_AUCHAN_STORE_ID || '48246401'
+
+      setProgress(60)
+
+      // Add items to cart via proxy
+      const cartRes = await zakazProxy('/cart/items/', 'POST', {
+        items: products.map(p => ({
+          ean: p.ean,
+          amount: p.quantity,
+          operation: 'add',
+        })),
+      }, zakazCookie)
+
+      setProgress(100)
+
+      if (!cartRes.ok && cartRes.status >= 400) {
+        setStatus('error')
+        setMessage('Помилка додавання товарів. Перевірте авторизацію в Auchan.')
+        sendResult({ success: false, error: 'Cart error' })
+        return
       }
 
       setStatus('done')
-      setMessage(`✅ ${added} товарів додано до кошика!`)
-      sendResult({ success: true, added })
+      setMessage(`✅ ${products.length} товарів додано до кошика!`)
+      sendResult({ success: true, added: products.length })
 
-      // Redirect to Auchan cart after 2 seconds
       setTimeout(() => {
-        window.location.href = 'https://auchan.zakaz.ua/uk/cart/'
+        window.open('https://auchan.zakaz.ua/uk/', '_blank')
+        window.close()
       }, 2000)
 
     } catch (e) {
@@ -129,55 +142,39 @@ function BridgePage() {
   }
 
   const icons: Record<Status, string> = {
-    waiting: '⏳',
-    'logging-in': '🔐',
-    filling: '🛒',
-    done: '🎉',
-    error: '⚠️',
+    waiting: '⏳', 'logging-in': '🔐', filling: '🛒', done: '🎉', error: '⚠️',
   }
-
   const colors: Record<Status, string> = {
-    waiting: 'text-stone-500',
-    'logging-in': 'text-blue-600',
-    filling: 'text-brand-600',
-    done: 'text-green-600',
-    error: 'text-red-600',
+    waiting: 'text-stone-500', 'logging-in': 'text-blue-600',
+    filling: 'text-brand-600', done: 'text-green-600', error: 'text-red-600',
   }
 
   return (
     <div className="min-h-screen bg-amber-50 flex items-center justify-center p-6">
       <div className="bg-white rounded-3xl shadow-lg p-8 w-full max-w-sm text-center space-y-6">
-        {/* Logo */}
         <div className="font-display text-xl font-bold text-stone-800">BalanceBite × Auchan</div>
 
-        {/* Status icon */}
         <div className="text-5xl">
-          {status === 'filling' ? (
-            <span className="inline-block animate-bounce">{icons[status]}</span>
-          ) : (
-            icons[status]
-          )}
+          {status === 'filling'
+            ? <span className="inline-block animate-bounce">{icons[status]}</span>
+            : icons[status]}
         </div>
 
-        {/* Message */}
         <p className={`font-medium ${colors[status]}`}>{message}</p>
 
-        {/* Progress bar */}
         {status === 'filling' && (
           <div className="w-full bg-stone-100 rounded-full h-2">
-            <div
-              className="bg-brand-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
+            <div className="bg-brand-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }} />
           </div>
         )}
 
-        {/* Instructions when not logged in */}
         {status === 'error' && message.includes('авторизовані') && (
           <div className="text-left bg-amber-50 rounded-2xl p-4 text-sm text-stone-600 space-y-2">
             <p className="font-semibold">Що робити:</p>
             <ol className="list-decimal list-inside space-y-1">
-              <li>Відкрийте <a href="https://auchan.zakaz.ua" target="_blank" rel="noreferrer" className="text-brand-600 underline">auchan.zakaz.ua</a></li>
+              <li>Відкрийте <a href="https://auchan.zakaz.ua" target="_blank" rel="noreferrer"
+                className="text-brand-600 underline">auchan.zakaz.ua</a></li>
               <li>Увійдіть у свій акаунт</li>
               <li>Поверніться і натисніть кнопку знову</li>
             </ol>
@@ -185,7 +182,10 @@ function BridgePage() {
         )}
 
         {status === 'done' && (
-          <p className="text-sm text-stone-400">Переходимо до кошика Auchan...</p>
+          <a href="https://auchan.zakaz.ua/uk/" target="_blank" rel="noreferrer"
+            className="btn-primary w-full justify-center text-sm">
+            🛒 Перейти до кошика Auchan →
+          </a>
         )}
       </div>
     </div>

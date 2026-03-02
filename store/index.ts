@@ -152,11 +152,13 @@ interface CartStore {
   setResult: (r: { success: boolean; message: string } | null) => void
 }
 
-export const useCartStore = create<CartStore>()((set) => ({
+export const useCartStore = create<CartStore>()(
+  persist(
+    (set) => ({
   cartItems: [],
   buildCart: (shoppingItems) => {
     const cartItems: CartItem[] = shoppingItems
-      .filter((i) => i.matchedProduct && !i.checked)
+      .filter((i) => i.matchedProduct)
       .map((i) => ({
         product: i.matchedProduct!,
         quantity: calcPackageQty(i.quantity, i.unit, i.matchedProduct!.weight),
@@ -182,7 +184,10 @@ export const useCartStore = create<CartStore>()((set) => ({
   setSubmitting: (v) => set({ isSubmitting: v }),
   lastResult: null,
   setResult: (r) => set({ lastResult: r }),
-}))
+    }),
+    { name: 'cart-items' }
+  )
+)
 
 // ─── Zakaz Connection Store ───────────────────────────────────────────────────
 

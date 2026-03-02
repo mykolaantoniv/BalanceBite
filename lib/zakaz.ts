@@ -56,8 +56,14 @@ export async function addToCart(
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Accept-Language': 'uk',
-        'Cookie': `__Host-zakaz-sid=${sessionToken}`,
-        'User-Agent': 'Mozilla/5.0 (compatible; MealPlanner/1.0)',
+        'x-chain': 'auchan',
+        'x-version': '65',
+        'Origin': 'https://auchan.zakaz.ua',
+        'Referer': 'https://auchan.zakaz.ua/',
+        'Cookie': sessionToken.startsWith('cookie:')
+          ? sessionToken.slice(7)
+          : `__Host-zakaz-sid=${sessionToken}`,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       },
       body: JSON.stringify(payload),
     })
@@ -79,29 +85,62 @@ export async function loginToZakaz(
   phone: string,
   password: string
 ): Promise<{ token: string } | { error: string }> {
-  const res = await fetch(`https://stores-api.zakaz.ua/user/esputnik/auth`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'x-chain': 'auchan',
-      'x-version': '65',
-      'Origin': 'https://auchan.zakaz.ua',
-    },
-    body: JSON.stringify({ login: phone, password }),
-  })
-
-  if (!res.ok) {
-    return { error: 'Невірний номер телефону або пароль' }
+  const BASE = 'https://stores-api.zakaz.ua'
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'x-chain': 'auchan',
+    'x-version': '65',
+    'Origin': 'https://auchan.zakaz.ua',
+    'Referer': 'https://auchan.zakaz.ua/',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
   }
 
-  const data = await res.json()
-  const token = data?.token
-  if (!token) {
-    return { error: 'No token in response' }
+  const endpoints = [
+    { url: `${BASE}/user/login`,           body: { phone, password } },
+    { url: `${BASE}/user/login`,           body: { login: phone, password } },
+    { url: `${BASE}/user/esputnik/auth`,   body: { login: phone, password } },
+    { url: `${BASE}/user/esputnik/auth`,   body: { phone, password } },
+  ]
+
+  const errors: string[] = []
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint.url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(endpoint.body),
+      })
+
+      const text = await res.text()
+      console.log(`[zakaz login] ${endpoint.url} → ${res.status}: ${text.slice(0, 300)}`)
+
+      if (!res.ok) {
+        errors.push(`${endpoint.url} ${res.status}`)
+        continue
+      }
+
+      let data: Record<string, unknown> = {}
+      try { data = JSON.parse(text) } catch { /* not json */ }
+
+      const token = (data?.token || data?.access_token || data?.sessionid || data?.key) as string | undefined
+      if (token) return { token }
+
+      // Cookie-based session
+      const setCookie = res.headers.get('set-cookie')
+      if (setCookie) {
+        console.log('[zakaz login] cookie-based session:', setCookie.slice(0, 100))
+        return { token: `cookie:${setCookie}` }
+      }
+
+      errors.push(`${endpoint.url} ok but no token: ${text.slice(0, 100)}`)
+    } catch (e) {
+      errors.push(String(e))
+    }
   }
 
-  return { token }
+  return { error: `Помилка входу: ${errors.join(' | ')}` }
 }
 
 // ─── Normalize product from API response ─────────────────────────────────────

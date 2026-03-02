@@ -43,34 +43,47 @@ export async function addToCart(
   sessionToken: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    // Build cookie header — token may be raw token or full cookie string
+    const cookieHeader = sessionToken.startsWith('cookie:')
+      ? sessionToken.slice(7)
+      : `zakaz_sid=${sessionToken}; __Host-zakaz-sid=${sessionToken}`
+
     const payload = {
-      products: items.map(item => ({
+      items: items.map(item => ({
         ean: item.product.ean,
-        quantity: item.quantity,
+        amount: item.quantity,
+        operation: 'add',
       })),
     }
 
-    const res = await fetch(`${API_BASE}/stores/${STORE_ID}/cart/`, {
+    console.log('[addToCart] sending', items.length, 'items to /cart/items/')
+    console.log('[addToCart] cookie:', cookieHeader.slice(0, 80))
+
+    const res = await fetch(`${API_BASE}/cart/items/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Accept-Language': 'uk',
         'x-chain': 'auchan',
         'x-version': '65',
         'Origin': 'https://auchan.zakaz.ua',
         'Referer': 'https://auchan.zakaz.ua/',
-        'Cookie': sessionToken.startsWith('cookie:')
-          ? sessionToken.slice(7)
-          : `__Host-zakaz-sid=${sessionToken}`,
+        'Cookie': cookieHeader,
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       },
       body: JSON.stringify(payload),
     })
 
+    const text = await res.text()
+    console.log('[addToCart] response', res.status, text.slice(0, 300))
+
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      return { success: false, error: err?.detail || `HTTP ${res.status}` }
+      let errMsg = `HTTP ${res.status}`
+      try {
+        const err = JSON.parse(text)
+        errMsg = err?.errors?.[0]?.description || err?.detail || errMsg
+      } catch { /* not json */ }
+      return { success: false, error: errMsg }
     }
 
     return { success: true }
@@ -85,62 +98,29 @@ export async function loginToZakaz(
   phone: string,
   password: string
 ): Promise<{ token: string } | { error: string }> {
-  const BASE = 'https://stores-api.zakaz.ua'
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-    'x-chain': 'auchan',
-    'x-version': '65',
-    'Origin': 'https://auchan.zakaz.ua',
-    'Referer': 'https://auchan.zakaz.ua/',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+  const res = await fetch(`https://stores-api.zakaz.ua/user/esputnik/auth`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'x-chain': 'auchan',
+      'x-version': '65',
+      'Origin': 'https://auchan.zakaz.ua',
+    },
+    body: JSON.stringify({ login: phone, password }),
+  })
+
+  if (!res.ok) {
+    return { error: 'Невірний номер телефону або пароль' }
   }
 
-  const endpoints = [
-    { url: `${BASE}/user/login`,           body: { phone, password } },
-    { url: `${BASE}/user/login`,           body: { login: phone, password } },
-    { url: `${BASE}/user/esputnik/auth`,   body: { login: phone, password } },
-    { url: `${BASE}/user/esputnik/auth`,   body: { phone, password } },
-  ]
-
-  const errors: string[] = []
-
-  for (const endpoint of endpoints) {
-    try {
-      const res = await fetch(endpoint.url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(endpoint.body),
-      })
-
-      const text = await res.text()
-      console.log(`[zakaz login] ${endpoint.url} → ${res.status}: ${text.slice(0, 300)}`)
-
-      if (!res.ok) {
-        errors.push(`${endpoint.url} ${res.status}`)
-        continue
-      }
-
-      let data: Record<string, unknown> = {}
-      try { data = JSON.parse(text) } catch { /* not json */ }
-
-      const token = (data?.token || data?.access_token || data?.sessionid || data?.key) as string | undefined
-      if (token) return { token }
-
-      // Cookie-based session
-      const setCookie = res.headers.get('set-cookie')
-      if (setCookie) {
-        console.log('[zakaz login] cookie-based session:', setCookie.slice(0, 100))
-        return { token: `cookie:${setCookie}` }
-      }
-
-      errors.push(`${endpoint.url} ok but no token: ${text.slice(0, 100)}`)
-    } catch (e) {
-      errors.push(String(e))
-    }
+  const data = await res.json()
+  const token = data?.token
+  if (!token) {
+    return { error: 'No token in response' }
   }
 
-  return { error: `Помилка входу: ${errors.join(' | ')}` }
+  return { token }
 }
 
 // ─── Normalize product from API response ─────────────────────────────────────

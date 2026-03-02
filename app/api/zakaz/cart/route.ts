@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
   }
 
   const result = await addToCart(items, zakazSession.token)
+  console.log('[cart route] addToCart result:', JSON.stringify(result))
 
   if (!result.success) {
     // If token expired, clear it so user knows to reconnect

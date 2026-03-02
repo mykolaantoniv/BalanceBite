@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppNav, StepBar } from '@/components/layout/AppNav'
-import { useCartStore, useShoppingStore } from '@/store'
+import { useCartStore, useShoppingStore, useZakazStore } from '@/store'
 import { formatPrice } from '@/lib/utils'
+import { AuchanConnectModal } from '@/components/ui/AuchanConnectModal'
 
 function QuantityEditor({ value, onChange }: { value: number; onChange: (n: number) => void }) {
   const [editing, setEditing] = useState(false)
@@ -50,59 +51,68 @@ export default function CartPage() {
   const router = useRouter()
   const { cartItems, updateQuantity, setQuantityDirect, removeItem, buildCart, isSubmitting, setSubmitting, lastResult, setResult } = useCartStore()
   const { items: shoppingItems } = useShoppingStore()
+  const { isConnected, setConnected } = useZakazStore()
+  const [showConnectModal, setShowConnectModal] = useState(false)
 
   useEffect(() => {
     if (cartItems.length === 0 && shoppingItems.length > 0) {
       buildCart(shoppingItems)
     }
+    // Check if already connected on mount
+    fetch('/api/zakaz/connect')
+      .then(r => r.json())
+      .then(d => { if (d.connected) setConnected(true) })
+      .catch(() => {})
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const total = cartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0)
 
   async function handleFillCart() {
+    // If not connected, show login modal first
+    if (!isConnected) {
+      setShowConnectModal(true)
+      return
+    }
+    await doFillCart()
+  }
+
+  async function doFillCart() {
     setSubmitting(true)
     setResult(null)
 
-    const products = cartItems.map(item => ({
-      ean: item.product.ean,
-      quantity: item.quantity,
-    }))
+    try {
+      const res = await fetch('/api/zakaz/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: cartItems }),
+      })
 
-    const popup = window.open(
-      '/auchan-bridge',
-      `auchan-bridge-${Date.now()}`,
-      'width=420,height=500,left=200,top=150,resizable=yes,scrollbars=no'
-    )
+      const data = await res.json()
 
-    if (!popup) {
-      setResult({ success: false, message: 'Не вдалося відкрити вікно. Дозвольте спливаючі вікна для цього сайту.' })
-      setSubmitting(false)
-      return
-    }
-
-    setTimeout(() => {
-      try { popup.postMessage({ type: 'FILL_CART', products }, '*') } catch { /* closed */ }
-    }, 1500)
-
-    function handleResult(event: MessageEvent) {
-      if (event.data?.type !== 'CART_RESULT') return
-      window.removeEventListener('message', handleResult)
-      setSubmitting(false)
-
-      if (event.data.success) {
-        setResult({ success: true, message: `${event.data.added} товарів додано до кошика Auchan!` })
-        // Redirect to success page
-        setTimeout(() => router.push('/success'), 800)
-      } else if (event.data.error?.includes('Not logged in')) {
-        setResult({ success: false, message: 'Спочатку увійдіть на auchan.zakaz.ua, потім спробуйте знову.' })
-      } else {
-        setResult({ success: false, message: 'Помилка заповнення кошика. Спробуйте ще раз.' })
+      if (!res.ok) {
+        // Session expired — need to reconnect
+        if (res.status === 403) {
+          setConnected(false)
+          setResult({ success: false, message: 'Сесія Auchan закінчилась. Підключіть акаунт знову.' })
+          setShowConnectModal(true)
+        } else {
+          setResult({ success: false, message: data.error || 'Помилка заповнення кошика' })
+        }
+        setSubmitting(false)
+        return
       }
-    }
 
-    window.addEventListener('message', handleResult)
-    setTimeout(() => { window.removeEventListener('message', handleResult); setSubmitting(false) }, 90000)
+      setResult({ success: true, message: `${data.itemCount} товарів додано до кошика Auchan!` })
+      setTimeout(() => {
+        window.open('https://auchan.zakaz.ua/uk/cart/', '_blank')
+        router.push('/success')
+      }, 800)
+    } catch {
+      setResult({ success: false, message: 'Мережева помилка. Спробуйте ще раз.' })
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -116,9 +126,32 @@ export default function CartPage() {
           <p className="text-stone-500 mt-1">{totalItems} упаковок на суму {formatPrice(total)}</p>
         </div>
 
-        {lastResult && !lastResult.success && (
-          <div className="p-4 rounded-2xl mb-6 flex items-center gap-3 bg-red-50 border border-red-200 text-red-800">
-            <span className="text-2xl">⚠️</span>
+        {/* Connection status */}
+        <div className="mb-4 flex items-center gap-3">
+          {isConnected ? (
+            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 px-4 py-2 rounded-xl">
+              <span>✅</span> Auchan підключено
+              <button onClick={() => {
+                fetch('/api/zakaz/connect', { method: 'DELETE' }).then(() => setConnected(false))
+              }} className="ml-2 text-xs text-stone-400 hover:text-red-400 transition-colors">
+                відключити
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => setShowConnectModal(true)}
+              className="flex items-center gap-2 text-sm text-stone-600 bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl hover:bg-amber-100 transition-colors">
+              <span>🔗</span> Підключити акаунт Auchan
+            </button>
+          )}
+        </div>
+
+        {lastResult && (
+          <div className={`p-4 rounded-2xl mb-6 flex items-center gap-3 ${
+            lastResult.success
+              ? 'bg-green-50 border border-green-200 text-green-800'
+              : 'bg-red-50 border border-red-200 text-red-800'
+          }`}>
+            <span className="text-2xl">{lastResult.success ? '🎉' : '⚠️'}</span>
             <p className="font-semibold">{lastResult.message}</p>
           </div>
         )}
@@ -148,7 +181,6 @@ export default function CartPage() {
                     )}
                     <p className="text-sm text-stone-500 mt-0.5">{cartItem.product.weight}г / уп</p>
                   </div>
-
                   <QuantityEditor
                     value={cartItem.quantity}
                     onChange={(qty) => {
@@ -156,12 +188,10 @@ export default function CartPage() {
                       else setQuantityDirect(cartItem.product.ean, qty)
                     }}
                   />
-
                   <div className="text-right flex-shrink-0 w-20">
                     <p className="font-semibold text-stone-800">{formatPrice(cartItem.product.price * cartItem.quantity)}</p>
                     <p className="text-xs text-stone-400">{formatPrice(cartItem.product.price)} / уп</p>
                   </div>
-
                   <button onClick={() => removeItem(cartItem.product.ean)}
                     className="text-stone-300 hover:text-red-400 transition-colors ml-1 flex-shrink-0" title="Видалити">✕</button>
                 </div>
@@ -186,12 +216,25 @@ export default function CartPage() {
               </button>
 
               <p className="text-xs text-stone-400 text-center mt-3">
-                Відкриється невелике вікно — потрібно бути авторизованим на auchan.zakaz.ua
+                {isConnected
+                  ? 'Товари будуть додані до вашого кошика на auchan.zakaz.ua'
+                  : 'Потрібно підключити акаунт Auchan'}
               </p>
             </div>
           </>
         )}
       </main>
+
+      {showConnectModal && (
+        <AuchanConnectModal
+          onClose={() => setShowConnectModal(false)}
+          onConnected={() => {
+            setShowConnectModal(false)
+            setConnected(true)
+            doFillCart()
+          }}
+        />
+      )}
     </>
   )
 }

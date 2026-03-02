@@ -11,13 +11,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { email, password } = await req.json()
-  if (!email || !password) {
+  const { phone, email, password } = await req.json()
+  if ((!email && !phone) || !password) {
     return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
   }
 
   const userId = (session.user as { id?: string }).id || session.user.email!
-  const result = await loginToZakaz(email, password)
+  const result = await loginToZakaz(phone || email, password)
 
   if ('error' in result) {
     return NextResponse.json({ error: result.error }, { status: 401 })

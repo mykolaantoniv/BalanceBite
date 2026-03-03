@@ -128,7 +128,7 @@ export async function loginToZakaz(
 
 
       if (!res.ok) {
-        errors.push(`${res.status}: ${JSON.stringify(data?.errors || data).slice(0, 100)}`)
+        errors.push(`HTTP ${res.status}`)
         continue
       }
 

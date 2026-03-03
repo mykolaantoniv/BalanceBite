@@ -17,6 +17,7 @@ import {
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 type MealType = 'breakfast' | 'lunch' | 'dinner'
+type ProgramType = 'balanced' | 'athletic' | 'vegetarian' | 'vegan' | 'detox'
 
 interface Recipe {
   id: number
@@ -31,19 +32,30 @@ interface Recipe {
   protein: number
   carbs: number
   fat: number
+  programs: ProgramType[]
 }
 
 const RECIPES: Recipe[] = [
-  { id: 1, nameUk: 'Середземноморська миска з куркою', prepTime: '25 хв', calories: 420, balanceScore: 92, ingredients: ['Куряче філе', 'Рис', 'Помідори', 'Шпинат'], tagsUk: ['Багато білку', 'Збалансовано'], emoji: '🥗', mealTypes: ['lunch', 'dinner'], protein: 38, carbs: 42, fat: 12 },
-  { id: 2, nameUk: 'Швидке овочеве смаження', prepTime: '15 хв', calories: 310, balanceScore: 88, ingredients: ['Броколі', 'Перець', 'Морква', 'Часник'], tagsUk: ['Вегетаріанське', 'Швидко'], emoji: '🥦', mealTypes: ['lunch', 'dinner'], protein: 12, carbs: 38, fat: 10 },
-  { id: 3, nameUk: 'Яєчня з протеїном', prepTime: '10 хв', calories: 350, balanceScore: 85, ingredients: ['Яйця', 'Шпинат', 'Помідори', 'Сир'], tagsUk: ['Багато білку', 'Швидко'], emoji: '🍳', mealTypes: ['breakfast'], protein: 28, carbs: 8, fat: 22 },
-  { id: 4, nameUk: 'Ситний суп із сочевиці', prepTime: '30 хв', calories: 280, balanceScore: 95, ingredients: ['Квасоля', 'Морква', 'Цибуля', 'Часник'], tagsUk: ['Клітковина', 'Заготовка'], emoji: '🍲', mealTypes: ['lunch', 'dinner'], protein: 18, carbs: 40, fat: 4 },
-  { id: 5, nameUk: 'Лосось із солодкою картоплею', prepTime: '20 хв', calories: 480, balanceScore: 97, ingredients: ['Лосось', 'Картопля', 'Броколі'], tagsUk: ['Омега-3', 'Збалансовано'], emoji: '🐟', mealTypes: ['dinner'], protein: 35, carbs: 45, fat: 16 },
-  { id: 6, nameUk: 'Паста Прімавера в одному горщику', prepTime: '20 хв', calories: 390, balanceScore: 80, ingredients: ['Паста', 'Перець', 'Помідори', 'Часник'], tagsUk: ['Улюблена', 'Легко'], emoji: '🍝', mealTypes: ['lunch', 'dinner'], protein: 14, carbs: 58, fat: 10 },
-  { id: 7, nameUk: 'Нічна вівсянка', prepTime: '5 хв', calories: 290, balanceScore: 82, ingredients: ['Вівсянка', 'Молоко', 'Ягоди'], tagsUk: ['Наперед', 'Швидко'], emoji: '🥣', mealTypes: ['breakfast'], protein: 10, carbs: 45, fat: 8 },
-  { id: 8, nameUk: 'Парфе з грецьким йогуртом', prepTime: '5 хв', calories: 250, balanceScore: 84, ingredients: ['Йогурт', 'Ягоди', 'Гранола'], tagsUk: ['Швидко', 'Збалансовано'], emoji: '🍨', mealTypes: ['breakfast'], protein: 18, carbs: 30, fat: 6 },
-  { id: 9, nameUk: 'Курка з авокадо у ролі', prepTime: '10 хв', calories: 440, balanceScore: 90, ingredients: ['Куряче філе', 'Авокадо', 'Помідори', 'Сир'], tagsUk: ['Багато білку', 'Швидко'], emoji: '🌯', mealTypes: ['lunch'], protein: 32, carbs: 35, fat: 18 },
+  { id: 1, nameUk: 'Середземноморська миска з куркою', prepTime: '25 хв', calories: 420, balanceScore: 92, ingredients: ['Куряче філе', 'Рис', 'Помідори', 'Шпинат'], tagsUk: ['Багато білку', 'Збалансовано'], emoji: '🥗', mealTypes: ['lunch', 'dinner'], protein: 38, carbs: 42, fat: 12, programs: ['balanced', 'athletic'] },
+  { id: 2, nameUk: 'Швидке овочеве смаження', prepTime: '15 хв', calories: 310, balanceScore: 88, ingredients: ['Броколі', 'Перець', 'Морква', 'Часник'], tagsUk: ['Вегетаріанське', 'Швидко'], emoji: '🥦', mealTypes: ['lunch', 'dinner'], protein: 12, carbs: 38, fat: 10, programs: ['vegetarian', 'vegan', 'balanced', 'detox'] },
+  { id: 3, nameUk: 'Яєчня з протеїном', prepTime: '10 хв', calories: 350, balanceScore: 85, ingredients: ['Яйця', 'Шпинат', 'Помідори', 'Сир'], tagsUk: ['Багато білку', 'Швидко'], emoji: '🍳', mealTypes: ['breakfast'], protein: 28, carbs: 8, fat: 22, programs: ['balanced', 'athletic'] },
+  { id: 4, nameUk: 'Ситний суп із сочевиці', prepTime: '30 хв', calories: 280, balanceScore: 95, ingredients: ['Квасоля', 'Морква', 'Цибуля', 'Часник'], tagsUk: ['Клітковина', 'Заготовка'], emoji: '🍲', mealTypes: ['lunch', 'dinner'], protein: 18, carbs: 40, fat: 4, programs: ['vegetarian', 'vegan', 'balanced', 'detox'] },
+  { id: 5, nameUk: 'Лосось із солодкою картоплею', prepTime: '20 хв', calories: 480, balanceScore: 97, ingredients: ['Лосось', 'Картопля', 'Броколі'], tagsUk: ['Омега-3', 'Збалансовано'], emoji: '🐟', mealTypes: ['dinner'], protein: 35, carbs: 45, fat: 16, programs: ['balanced', 'athletic'] },
+  { id: 6, nameUk: 'Паста Прімавера в одному горщику', prepTime: '20 хв', calories: 390, balanceScore: 80, ingredients: ['Паста', 'Перець', 'Помідори', 'Часник'], tagsUk: ['Улюблена', 'Легко'], emoji: '🍝', mealTypes: ['lunch', 'dinner'], protein: 14, carbs: 58, fat: 10, programs: ['vegetarian', 'balanced'] },
+  { id: 7, nameUk: 'Нічна вівсянка', prepTime: '5 хв', calories: 290, balanceScore: 82, ingredients: ['Вівсянка', 'Молоко', 'Ягоди'], tagsUk: ['Наперед', 'Швидко'], emoji: '🥣', mealTypes: ['breakfast'], protein: 10, carbs: 45, fat: 8, programs: ['balanced'] },
+  { id: 8, nameUk: 'Парфе з грецьким йогуртом', prepTime: '5 хв', calories: 250, balanceScore: 84, ingredients: ['Йогурт', 'Ягоди', 'Гранола'], tagsUk: ['Швидко', 'Збалансовано'], emoji: '🍨', mealTypes: ['breakfast'], protein: 18, carbs: 30, fat: 6, programs: ['balanced'] },
+  { id: 9, nameUk: 'Курка з авокадо у ролі', prepTime: '10 хв', calories: 440, balanceScore: 90, ingredients: ['Куряче філе', 'Авокадо', 'Помідори', 'Сир'], tagsUk: ['Багато білку', 'Швидко'], emoji: '🌯', mealTypes: ['lunch'], protein: 32, carbs: 35, fat: 18, programs: ['balanced', 'athletic'] },
 ]
+
+const PROGRAM_OPTIONS: Array<{ value: ProgramType; label: string; emoji: string; desc: string }> = [
+  { value: 'balanced', label: 'Збалансоване', emoji: '⚖️', desc: 'Оптимальний баланс білків, жирів та вуглеводів' },
+  { value: 'athletic', label: 'Атлетичне', emoji: '💪', desc: 'Більше білку для розвитку м\'язів' },
+  { value: 'vegetarian', label: 'Вегетаріанське', emoji: '🌱', desc: 'Без м\'яса та риби' },
+  { value: 'vegan', label: 'Веганське', emoji: '🥗', desc: 'Без тваринних продуктів' },
+  { value: 'detox', label: 'Детокс', emoji: '🍯', desc: 'Легкі овочеві страви' },
+]
+
+const CALORIE_TIERS = [950, 1150, 1350, 1525, 2025]
 
 const COMMON_INGREDIENTS = ['Куряче філе', 'Рис', 'Яйця', 'Помідори', 'Цибуля', 'Часник', 'Броколі', 'Паста', 'Перець', 'Шпинат', 'Картопля', 'Морква', 'Сир', 'Квасоля', 'Лосось', 'Авокадо', 'Тофу', 'Гриби']
 const MEAL_TYPE_LABELS: Record<MealType, string> = { breakfast: '🌅 Сніданок', lunch: '☀️ Обід', dinner: '🌙 Вечеря' }
@@ -130,6 +142,8 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
   onBuildShoppingList: (plan: DayPlan[]) => void
 }) {
   const [numDays, setNumDays] = useState(7)
+  const [selectedProgram, setSelectedProgram] = useState<ProgramType>('balanced')
+  const [selectedCalories, setSelectedCalories] = useState(1350)
   const [plan, setPlan] = useState<DayPlan[]>(createEmptyPlan(7))
   const [pickingSlot, setPickingSlot] = useState<{ dayIndex: number; mealIndex: number } | null>(null)
 
@@ -150,9 +164,21 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
   }
 
   const autoFill = () => {
-    const available = selectedIngredients.length > 0
-      ? RECIPES.filter(r => r.ingredients.some(ing => selectedIngredients.includes(ing)))
-      : RECIPES
+    const calorieRange = { min: selectedCalories * 0.9, max: selectedCalories * 1.1 }
+    let available = RECIPES.filter(r =>
+      r.programs.includes(selectedProgram) &&
+      r.calories >= calorieRange.min &&
+      r.calories <= calorieRange.max
+    )
+
+    if (selectedIngredients.length > 0) {
+      available = available.filter(r => r.ingredients.some(ing => selectedIngredients.includes(ing)))
+    }
+
+    if (available.length === 0) {
+      available = RECIPES.filter(r => r.programs.includes(selectedProgram))
+    }
+
     setPlan(prev => prev.map(day => ({
       ...day,
       meals: day.meals.map(slot => {
@@ -172,7 +198,18 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
   })()
 
   const pickerMealType = pickingSlot ? plan[pickingSlot.dayIndex].meals[pickingSlot.mealIndex].mealType : null
-  const pickerRecipes = pickerMealType ? RECIPES.filter(r => r.mealTypes.includes(pickerMealType)) : []
+  const calorieRange = { min: selectedCalories * 0.9, max: selectedCalories * 1.1 }
+  const pickerRecipes = pickerMealType
+    ? RECIPES.filter(r =>
+        r.mealTypes.includes(pickerMealType) &&
+        r.programs.includes(selectedProgram) &&
+        r.calories >= calorieRange.min &&
+        r.calories <= calorieRange.max
+      )
+    : []
+
+  const avgCaloriesPerMeal = filledSlots > 0 ? Math.round(totalCalories / filledSlots) : 0
+  const calorieDeviation = filledSlots > 0 ? Math.round(((totalCalories / numDays) / selectedCalories - 1) * 100) : 0
 
   return (
     <section className="py-20 px-6">
@@ -185,18 +222,54 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
         </div>
 
         {/* Controls */}
-        <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
-          <div className="flex items-center gap-2 rounded-full px-2 py-1 border"
-            style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-            <button onClick={() => numDays > 1 && handleDaysChange(numDays - 1)} className="p-1.5 rounded-full transition-colors hover:bg-secondary"><ChevronLeft size={16} /></button>
-            <span className="font-body font-semibold text-sm min-w-[80px] text-center">{numDays} дн.</span>
-            <button onClick={() => numDays < 14 && handleDaysChange(numDays + 1)} className="p-1.5 rounded-full transition-colors hover:bg-secondary"><ChevronRight size={16} /></button>
+        <div className="space-y-4 mb-8">
+          {/* Program Selector */}
+          <div className="flex flex-wrap gap-2 justify-center">
+            {PROGRAM_OPTIONS.map(option => (
+              <button key={option.value}
+                onClick={() => setSelectedProgram(option.value)}
+                className="px-4 py-2 rounded-full font-body text-sm font-medium transition-all duration-200 border group"
+                style={{
+                  backgroundColor: selectedProgram === option.value ? 'var(--primary)' : 'var(--card)',
+                  borderColor: selectedProgram === option.value ? 'var(--primary)' : 'var(--border)',
+                  color: selectedProgram === option.value ? 'var(--primary-foreground)' : 'var(--card-foreground)',
+                  transform: selectedProgram === option.value ? 'scale(1.05)' : 'scale(1)',
+                  boxShadow: selectedProgram === option.value ? '0 2px 8px hsla(152,35%,38%,0.3)' : 'none',
+                }}
+                title={option.desc}>
+                {option.emoji} {option.label}
+              </button>
+            ))}
           </div>
-          <button onClick={autoFill}
-            className="px-5 py-2 rounded-full font-body text-sm font-semibold transition-opacity hover:opacity-90"
-            style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
-            ✨ Заповнити автоматично
-          </button>
+
+          {/* Day and Calorie Controls */}
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <div className="flex items-center gap-2 rounded-full px-2 py-1 border"
+              style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+              <button onClick={() => numDays > 1 && handleDaysChange(numDays - 1)} className="p-1.5 rounded-full transition-colors hover:bg-secondary"><ChevronLeft size={16} /></button>
+              <span className="font-body font-semibold text-sm min-w-[80px] text-center">{numDays} дн.</span>
+              <button onClick={() => numDays < 14 && handleDaysChange(numDays + 1)} className="p-1.5 rounded-full transition-colors hover:bg-secondary"><ChevronRight size={16} /></button>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-full px-2 py-1 border"
+              style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+              <button onClick={() => {
+                const currentIdx = CALORIE_TIERS.indexOf(selectedCalories)
+                if (currentIdx > 0) setSelectedCalories(CALORIE_TIERS[currentIdx - 1])
+              }} className="p-1.5 rounded-full transition-colors hover:bg-secondary"><ChevronLeft size={16} /></button>
+              <span className="font-body font-semibold text-sm min-w-[100px] text-center" style={{ color: 'var(--foreground)' }}>~{selectedCalories} ккал</span>
+              <button onClick={() => {
+                const currentIdx = CALORIE_TIERS.indexOf(selectedCalories)
+                if (currentIdx < CALORIE_TIERS.length - 1) setSelectedCalories(CALORIE_TIERS[currentIdx + 1])
+              }} className="p-1.5 rounded-full transition-colors hover:bg-secondary"><ChevronRight size={16} /></button>
+            </div>
+
+            <button onClick={autoFill}
+              className="px-5 py-2 rounded-full font-body text-sm font-semibold transition-opacity hover:opacity-90"
+              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
+              ✨ Заповнити автоматично
+            </button>
+          </div>
         </div>
 
         {/* Summary */}
@@ -207,13 +280,22 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
           </div>
           <div className="flex items-center gap-2" style={{ color: 'var(--muted-foreground)' }}>
             <Flame size={16} style={{ color: 'hsl(28,70%,55%)' }} />
-            <span>{Math.round(totalCalories / numDays)} сер. кал/день</span>
+            <span>{filledSlots > 0 ? Math.round(totalCalories / numDays) : '—'} / {selectedCalories} ккал/день
+              {filledSlots > 0 && calorieDeviation !== 0 && (
+                <span style={{ color: Math.abs(calorieDeviation) <= 10 ? 'var(--primary)' : 'hsl(28,70%,55%)' }}>
+                  {' '}({calorieDeviation > 0 ? '+' : ''}{calorieDeviation}%)
+                </span>
+              )}
+            </span>
           </div>
           {avgBalance > 0 && (
             <div className="flex items-center gap-2" style={{ color: getBalanceColor(avgBalance) }}>
               <Leaf size={16} /><span>{avgBalance}% сер. баланс</span>
             </div>
           )}
+          <div className="flex items-center gap-2" style={{ color: 'var(--muted-foreground)' }}>
+            <span>{PROGRAM_OPTIONS.find(p => p.value === selectedProgram)?.emoji} {PROGRAM_OPTIONS.find(p => p.value === selectedProgram)?.label}</span>
+          </div>
         </div>
 
         {/* Grid */}

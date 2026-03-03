@@ -7,6 +7,10 @@ const nextConfig = {
     ],
   },
   output: 'standalone',
+  env: {
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
+    AUTH_TRUST_HOST: 'true',
+  },
 }
 
 module.exports = nextConfig

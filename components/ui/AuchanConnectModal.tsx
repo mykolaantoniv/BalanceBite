@@ -9,7 +9,7 @@ interface Props {
 }
 
 export function AuchanConnectModal({ onClose, onConnected }: Props) {
-  const { setConnected } = useZakazStore()
+  const { setToken } = useZakazStore()
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -35,7 +35,13 @@ export function AuchanConnectModal({ onClose, onConnected }: Props) {
         return
       }
 
-      setConnected(true)
+      if (!data.token) {
+        setError('Відповідь сервера не містить токена. Спробуйте ще раз.')
+        setLoading(false)
+        return
+      }
+
+      setToken(data.token)
       onConnected()
     } catch {
       setError('Мережева помилка. Спробуйте ще раз.')

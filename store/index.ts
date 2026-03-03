@@ -193,10 +193,19 @@ export const useCartStore = create<CartStore>()(
 
 interface ZakazConnectionStore {
   isConnected: boolean
+  token: string | null
   setConnected: (v: boolean) => void
+  setToken: (token: string | null) => void
 }
 
-export const useZakazStore = create<ZakazConnectionStore>()((set) => ({
-  isConnected: false,
-  setConnected: (v) => set({ isConnected: v }),
-}))
+export const useZakazStore = create<ZakazConnectionStore>()(
+  persist(
+    (set) => ({
+      isConnected: false,
+      token: null,
+      setConnected: (v) => set({ isConnected: v }),
+      setToken: (token) => set({ token, isConnected: !!token }),
+    }),
+    { name: 'zakaz-connection' }
+  )
+)

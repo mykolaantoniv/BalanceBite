@@ -51,7 +51,7 @@ export default function CartPage() {
   const router = useRouter()
   const { cartItems, updateQuantity, setQuantityDirect, removeItem, buildCart, isSubmitting, setSubmitting, lastResult, setResult } = useCartStore()
   const { items: shoppingItems } = useShoppingStore()
-  const { isConnected, setConnected } = useZakazStore()
+  const { isConnected, token, setConnected, setToken } = useZakazStore()
   const [showConnectModal, setShowConnectModal] = useState(false)
 
   useEffect(() => {
@@ -85,7 +85,7 @@ export default function CartPage() {
       const res = await fetch('/api/zakaz/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: cartItems }),
+        body: JSON.stringify({ items: cartItems, token }),
       })
 
       const data = await res.json()
@@ -93,7 +93,7 @@ export default function CartPage() {
       if (!res.ok) {
         // Session expired — need to reconnect
         if (res.status === 403) {
-          setConnected(false)
+          setToken(null)
           setResult({ success: false, message: 'Сесія Auchan закінчилась. Підключіть акаунт знову.' })
           setShowConnectModal(true)
         } else {
@@ -132,7 +132,7 @@ export default function CartPage() {
             <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 px-4 py-2 rounded-xl">
               <span>✅</span> Auchan підключено
               <button onClick={() => {
-                fetch('/api/zakaz/connect', { method: 'DELETE' }).then(() => setConnected(false))
+                fetch('/api/zakaz/connect', { method: 'DELETE' }).then(() => setToken(null))
               }} className="ml-2 text-xs text-stone-400 hover:text-red-400 transition-colors">
                 відключити
               </button>

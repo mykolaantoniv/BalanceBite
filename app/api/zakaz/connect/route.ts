@@ -1,52 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { loginToZakaz } from '@/lib/zakaz'
-import { setZakazSession, deleteZakazSession, hasZakazSession } from '@/lib/sessionStore'
 
-// POST /api/zakaz/connect  — log in to zakaz.ua and store token
+// POST /api/zakaz/connect — log in to zakaz.ua, return token to client
+// Token is stored client-side to avoid server session issues on Azure
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
   const { phone, email, password } = await req.json()
   if ((!email && !phone) || !password) {
-    return NextResponse.json({ error: 'Email and password required' }, { status: 400 })
+    return NextResponse.json({ error: 'Phone and password required' }, { status: 400 })
   }
 
-  const userId = (session.user as { id?: string }).id || session.user.email!
   const result = await loginToZakaz(phone || email, password)
 
   if ('error' in result) {
     return NextResponse.json({ error: result.error }, { status: 401 })
   }
 
-  setZakazSession(userId, result.token)
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ success: true, token: result.token })
 }
 
-// GET /api/zakaz/connect — check if user has active zakaz session
+// GET /api/zakaz/connect — no-op, connection state managed client-side
 export async function GET() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const userId = (session.user as { id?: string }).id || session.user.email!
-  const connected = hasZakazSession(userId)
-  return NextResponse.json({ connected })
+  return NextResponse.json({ connected: false })
 }
 
-// DELETE /api/zakaz/connect — disconnect zakaz.ua account
+// DELETE /api/zakaz/connect — no-op, client clears its own token
 export async function DELETE() {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const userId = (session.user as { id?: string }).id || session.user.email!
-  deleteZakazSession(userId)
   return NextResponse.json({ success: true })
 }

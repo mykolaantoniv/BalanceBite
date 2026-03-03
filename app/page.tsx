@@ -165,7 +165,9 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
   }
 
   const autoFill = () => {
-    const calorieRange = { min: selectedCalories * 0.9, max: selectedCalories * 1.1 }
+    const mealsPerDay = 3
+    const caloriesPerMeal = selectedCalories / mealsPerDay
+    const calorieRange = { min: caloriesPerMeal * 0.9, max: caloriesPerMeal * 1.1 }
     let available = RECIPES.filter(r =>
       r.programs.includes(selectedProgram) &&
       r.calories >= calorieRange.min &&
@@ -199,7 +201,9 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
   })()
 
   const pickerMealType = pickingSlot ? plan[pickingSlot.dayIndex].meals[pickingSlot.mealIndex].mealType : null
-  const calorieRange = { min: selectedCalories * 0.9, max: selectedCalories * 1.1 }
+  const mealsPerDay = 3
+  const caloriesPerMeal = selectedCalories / mealsPerDay
+  const calorieRange = { min: caloriesPerMeal * 0.9, max: caloriesPerMeal * 1.1 }
   const pickerRecipes = pickerMealType
     ? RECIPES.filter(r =>
         r.mealTypes.includes(pickerMealType) &&
@@ -469,33 +473,49 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
                 <p className="text-sm font-body mb-4" style={{ color: 'var(--muted-foreground)' }}>
                   {plan[pickingSlot.dayIndex].label} · {pickerMealType && MEAL_TYPE_LABELS[pickerMealType]}
                 </p>
-                <div className="space-y-3">
-                  {EXTENDED_RECIPES.filter(r =>
-                    r.mealTypes.includes(pickerMealType || 'breakfast') &&
-                    r.programs.includes(selectedProgram) &&
-                    r.calories >= selectedCalories * 0.9 &&
-                    r.calories <= selectedCalories * 1.1
-                  ).map(recipe => (
-                    <button key={recipe.id} onClick={() => setSelectedRecipeDetail(recipe)}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all hover:border-green-500"
-                      style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-                      <span className="text-2xl">{recipe.emoji}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-body text-sm font-medium" style={{ color: 'var(--foreground)' }}>{recipe.nameUk}</p>
-                        <p className="text-xs font-body" style={{ color: 'var(--muted-foreground)' }}>
-                          {recipe.calories} кал · {recipe.prepTime}
+                {(() => {
+                  const currentDay = pickingSlot ? plan[pickingSlot.dayIndex] : null
+                  const usedCalories = currentDay
+                    ? currentDay.meals.reduce((sum, m) => sum + (m.recipe?.calories ?? 0), 0)
+                    : 0
+                  const remainingBudget = selectedCalories - usedCalories
+                  return (
+                    <>
+                      <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: 'hsla(152,35%,38%,0.1)' }}>
+                        <p className="text-xs font-body" style={{ color: 'var(--muted-foreground)' }}>Залишилось для дня</p>
+                        <p className="font-body font-semibold" style={{ color: 'var(--foreground)' }}>
+                          {remainingBudget} ккал {remainingBudget < 0 && <span style={{ color: '#d96b2a' }}>(перебір: {-remainingBudget})</span>}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold font-body"
-                          style={{ backgroundColor: getBalanceBg(recipe.balanceScore), color: getBalanceColor(recipe.balanceScore) }}>
-                          {recipe.balanceScore}%
-                        </span>
-                        <Info size={14} style={{ color: 'var(--muted-foreground)' }} />
+                      <div className="space-y-3">
+                        {EXTENDED_RECIPES.filter(r =>
+                          r.mealTypes.includes(pickerMealType || 'breakfast') &&
+                          r.programs.includes(selectedProgram) &&
+                          r.calories <= remainingBudget * 1.1
+                        ).map(recipe => (
+                          <button key={recipe.id} onClick={() => setSelectedRecipeDetail(recipe)}
+                            className="w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all hover:border-green-500"
+                            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
+                            <span className="text-2xl">{recipe.emoji}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-body text-sm font-medium" style={{ color: 'var(--foreground)' }}>{recipe.nameUk}</p>
+                              <p className="text-xs font-body" style={{ color: 'var(--muted-foreground)' }}>
+                                {recipe.calories} кал · {recipe.prepTime}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded-full text-xs font-semibold font-body"
+                                style={{ backgroundColor: getBalanceBg(recipe.balanceScore), color: getBalanceColor(recipe.balanceScore) }}>
+                                {recipe.balanceScore}%
+                              </span>
+                              <Info size={14} style={{ color: 'var(--muted-foreground)' }} />
+                            </div>
+                          </button>
+                        ))}
                       </div>
-                    </button>
-                  ))}
-                </div>
+                    </>
+                  )
+                })()}
               </div>
             )}
           </div>

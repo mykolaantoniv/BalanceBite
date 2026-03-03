@@ -92,43 +92,81 @@ export async function addToCart(
   }
 }
 
-// ─── Login to Zakaz.ua (captures session token) ───────────────────────────────
-
 export async function loginToZakaz(
   phone: string,
   password: string
 ): Promise<{ token: string } | { error: string }> {
-  // Try standard login endpoint
-  const res = await fetch(`https://stores-api.zakaz.ua/user/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      'x-chain': 'auchan',
-      'x-version': '65',
-      'Origin': 'https://auchan.zakaz.ua',
-    },
-    body: JSON.stringify({ 
-      login: phone, 
-      password,
-      device_type: 'web'
-    }),
-  })
-
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}))
-    console.error('[Zakaz Login Error]', res.status, errorData)
-    return { error: `Помилка входу (${res.status}). Перевірте номер телефону та пароль.` }
+  const BASE = 'https://stores-api.zakaz.ua'
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'x-chain': 'auchan',
+    'x-version': '65',
+    'Origin': 'https://auchan.zakaz.ua',
+    'Referer': 'https://auchan.zakaz.ua/',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
   }
 
-  const data = await res.json()
-  const token = data?.token || data?.session_token || data?.sid
-  if (!token) {
-    console.error('[Zakaz No Token]', data)
-    return { error: 'Відповідь сервера не містить токена. Спробуйте ще раз.' }
+  // Normalize: strip +, spaces → 380XXXXXXXXX
+  const normalizedPhone = phone.replace(/\D/g, '').replace(/^0/, '380')
+
+  const endpoints = [
+    { url: `${BASE}/user/login`, body: { phone: normalizedPhone, password } },
+    { url: `${BASE}/user/login`, body: { login: normalizedPhone, password } },
+  ]
+
+  const errors: string[] = []
+
+  for (const endpoint of endpoints) {
+    try {
+      const res = await fetch(endpoint.url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(endpoint.body),
+      })
+
+      const text = await res.text()
+      let data: Record<string, unknown> = {}
+      try { data = JSON.parse(text) } catch { /* not json */ }
+
+      console.log(`[zakaz login] ${endpoint.url} → ${res.status}:`, JSON.stringify(data).slice(0, 200))
+
+      if (!res.ok) {
+        errors.push(`${res.status}: ${JSON.stringify(data?.errors || data).slice(0, 100)}`)
+        continue
+      }
+
+      // Token field
+      const token = (data?.token || data?.access_token || data?.sessionid || data?.key) as string | undefined
+      if (token) return { token }
+
+      // Cookie-based session
+      const setCookie = res.headers.get('set-cookie')
+      console.log('[zakaz login] set-cookie:', setCookie?.slice(0, 200))
+
+      if (setCookie) {
+        const sidMatch = setCookie.match(/(?:__Host-)?zakaz[_-]?sid=([^;,\s]+)/i)
+        if (sidMatch?.[1]) {
+          console.log('[zakaz login] extracted sid:', sidMatch[1].slice(0, 40))
+          return { token: sidMatch[1] }
+        }
+        return { token: `cookie:${setCookie}` }
+      }
+
+      // user_id returned but no cookie — session must come from cookies
+      if (data?.user_id) {
+        console.log('[Zakaz No Token]', JSON.stringify(data))
+        errors.push(`Login OK (user_id=${data.user_id}) but no session cookie in response`)
+        continue
+      }
+
+      errors.push(`ok but no token/cookie: ${text.slice(0, 100)}`)
+    } catch (e) {
+      errors.push(String(e))
+    }
   }
 
-  return { token }
+  return { error: `Помилка входу: ${errors.join(' | ')}` }
 }
 
 // ─── Normalize product from API response ─────────────────────────────────────

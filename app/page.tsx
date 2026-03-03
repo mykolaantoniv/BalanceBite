@@ -7,11 +7,13 @@ import { useSession, signOut } from 'next-auth/react'
 import { useShoppingStore } from '@/store'
 import { generateId } from '@/lib/utils'
 import type { ShoppingItem } from '@/types'
+import { EXTENDED_RECIPES } from '@/lib/recipes-extended'
 import {
   Leaf, ChevronDown, Plus, X,
   UtensilsCrossed, CalendarDays,
   ShieldCheck, Clock, Heart,
-  Calendar, Flame, ChevronLeft, ChevronRight, Trash2
+  Calendar, Flame, ChevronLeft, ChevronRight, Trash2,
+  ChefHat, Zap, Info
 } from 'lucide-react'
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -144,6 +146,7 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
   const [selectedCalories, setSelectedCalories] = useState(1350)
   const [plan, setPlan] = useState<DayPlan[]>(createEmptyPlan(7))
   const [pickingSlot, setPickingSlot] = useState<{ dayIndex: number; mealIndex: number } | null>(null)
+  const [selectedRecipeDetail, setSelectedRecipeDetail] = useState<typeof EXTENDED_RECIPES[0] | null>(null)
 
   const handleDaysChange = (days: number) => { setNumDays(days); setPlan(createEmptyPlan(days)); setPickingSlot(null) }
 
@@ -366,43 +369,135 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
         {pickingSlot && (
           <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4"
             style={{ backgroundColor: 'hsla(150,20%,10%,0.4)', backdropFilter: 'blur(4px)' }}
-            onClick={() => setPickingSlot(null)}>
-            <div className="rounded-2xl border p-6 max-w-lg w-full max-h-[70vh] overflow-y-auto shadow-2xl"
-              style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
-              onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-display text-xl" style={{ color: 'var(--foreground)' }}>
-                  Оберіть {pickerMealType === 'breakfast' ? 'сніданок' : pickerMealType === 'lunch' ? 'обід' : 'вечерю'}
-                </h3>
-                <button onClick={() => setPickingSlot(null)} style={{ color: 'var(--muted-foreground)' }}>✕</button>
+            onClick={() => { setPickingSlot(null); setSelectedRecipeDetail(null); }}>
+
+            {/* Recipe Details View */}
+            {selectedRecipeDetail && (
+              <div className="rounded-2xl border p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl"
+                style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
+                onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-display text-2xl" style={{ color: 'var(--foreground)' }}>
+                    {selectedRecipeDetail.emoji} {selectedRecipeDetail.nameUk}
+                  </h2>
+                  <button onClick={() => setSelectedRecipeDetail(null)} style={{ color: 'var(--muted-foreground)' }}>✕</button>
+                </div>
+
+                <p className="text-sm font-body mb-6" style={{ color: 'var(--muted-foreground)' }}>
+                  {selectedRecipeDetail.description}
+                </p>
+
+                {/* Nutrition Info */}
+                <div className="grid grid-cols-4 gap-2 mb-6">
+                  <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsla(152,35%,38%,0.1)' }}>
+                    <p className="text-xs font-body" style={{ color: 'var(--muted-foreground)' }}>Калорії</p>
+                    <p className="font-body font-semibold" style={{ color: 'var(--foreground)' }}>{selectedRecipeDetail.calories}</p>
+                  </div>
+                  <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsla(28,70%,55%,0.1)' }}>
+                    <p className="text-xs font-body" style={{ color: 'var(--muted-foreground)' }}>Білки</p>
+                    <p className="font-body font-semibold" style={{ color: 'var(--foreground)' }}>{selectedRecipeDetail.protein}г</p>
+                  </div>
+                  <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsla(15,80%,55%,0.1)' }}>
+                    <p className="text-xs font-body" style={{ color: 'var(--muted-foreground)' }}>Жири</p>
+                    <p className="font-body font-semibold" style={{ color: 'var(--foreground)' }}>{selectedRecipeDetail.fat}г</p>
+                  </div>
+                  <div className="p-3 rounded-lg" style={{ backgroundColor: 'hsla(45,80%,50%,0.1)' }}>
+                    <p className="text-xs font-body" style={{ color: 'var(--muted-foreground)' }}>Вуглеводи</p>
+                    <p className="font-body font-semibold" style={{ color: 'var(--foreground)' }}>{selectedRecipeDetail.carbs}г</p>
+                  </div>
+                </div>
+
+                {/* Ingredients */}
+                <div className="mb-6">
+                  <h3 className="font-display text-lg mb-3" style={{ color: 'var(--foreground)' }}>
+                    <ChefHat size={18} className="inline mr-2" />Інгредієнти
+                  </h3>
+                  <ul className="space-y-2">
+                    {selectedRecipeDetail.ingredients.map((ing, i) => (
+                      <li key={i} className="flex justify-between text-sm font-body" style={{ color: 'var(--foreground)' }}>
+                        <span>{ing.name}</span>
+                        <span style={{ color: 'var(--muted-foreground)' }}>{ing.quantity}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Recipe Steps */}
+                <div className="mb-6">
+                  <h3 className="font-display text-lg mb-3" style={{ color: 'var(--foreground)' }}>
+                    <Zap size={18} className="inline mr-2" />Рецепт
+                  </h3>
+                  <ol className="space-y-2">
+                    {selectedRecipeDetail.steps.map((step, i) => (
+                      <li key={i} className="text-sm font-body" style={{ color: 'var(--foreground)' }}>
+                        <span className="font-semibold" style={{ color: 'var(--primary)' }}>Крок {i + 1}:</span> {step}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+
+                {/* Action Button */}
+                <button
+                  onClick={() => {
+                    assignRecipe({
+                      ...selectedRecipeDetail,
+                      balanceScore: selectedRecipeDetail.balanceScore,
+                      tagsUk: selectedRecipeDetail.tagsUk,
+                      ingredients: selectedRecipeDetail.ingredients.map(ing => ing.name),
+                    } as Recipe);
+                    setSelectedRecipeDetail(null);
+                    setPickingSlot(null);
+                  }}
+                  className="w-full py-3 rounded-full font-body font-semibold transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
+                  Вибрати цю страву
+                </button>
               </div>
-              <p className="text-sm font-body mb-4" style={{ color: 'var(--muted-foreground)' }}>
-                {plan[pickingSlot.dayIndex].label} · {pickerMealType && MEAL_TYPE_LABELS[pickerMealType]}
-              </p>
-              <div className="space-y-3">
-                {pickerRecipes.map(recipe => {
-                  const matched = selectedIngredients.filter(ing => recipe.ingredients.includes(ing))
-                  return (
-                    <button key={recipe.id} onClick={() => assignRecipe(recipe)}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all recipe-picker-btn"
-                      style={{ borderColor: 'var(--border)' }}>
+            )}
+
+            {/* Recipe List View */}
+            {!selectedRecipeDetail && pickingSlot && (
+              <div className="rounded-2xl border p-6 max-w-lg w-full max-h-[70vh] overflow-y-auto shadow-2xl"
+                style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
+                onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-display text-xl" style={{ color: 'var(--foreground)' }}>
+                    Оберіть {pickerMealType === 'breakfast' ? 'сніданок' : pickerMealType === 'lunch' ? 'обід' : 'вечерю'}
+                  </h3>
+                  <button onClick={() => setPickingSlot(null)} style={{ color: 'var(--muted-foreground)' }}>✕</button>
+                </div>
+                <p className="text-sm font-body mb-4" style={{ color: 'var(--muted-foreground)' }}>
+                  {plan[pickingSlot.dayIndex].label} · {pickerMealType && MEAL_TYPE_LABELS[pickerMealType]}
+                </p>
+                <div className="space-y-3">
+                  {EXTENDED_RECIPES.filter(r =>
+                    r.mealTypes.includes(pickerMealType || 'breakfast') &&
+                    r.programs.includes(selectedProgram) &&
+                    r.calories >= selectedCalories * 0.9 &&
+                    r.calories <= selectedCalories * 1.1
+                  ).map(recipe => (
+                    <button key={recipe.id} onClick={() => setSelectedRecipeDetail(recipe)}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all hover:border-green-500"
+                      style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
                       <span className="text-2xl">{recipe.emoji}</span>
                       <div className="flex-1 min-w-0">
                         <p className="font-body text-sm font-medium" style={{ color: 'var(--foreground)' }}>{recipe.nameUk}</p>
                         <p className="text-xs font-body" style={{ color: 'var(--muted-foreground)' }}>
                           {recipe.calories} кал · {recipe.prepTime}
-                          {matched.length > 0 && <span style={{ color: 'var(--primary)' }}> · {matched.length} збігів</span>}
                         </p>
                       </div>
-                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold font-body flex-shrink-0"
-                        style={{ backgroundColor: getBalanceBg(recipe.balanceScore), color: getBalanceColor(recipe.balanceScore) }}>
-                        {recipe.balanceScore}%
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold font-body"
+                          style={{ backgroundColor: getBalanceBg(recipe.balanceScore), color: getBalanceColor(recipe.balanceScore) }}>
+                          {recipe.balanceScore}%
+                        </span>
+                        <Info size={14} style={{ color: 'var(--muted-foreground)' }} />
+                      </div>
                     </button>
-                  )
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>

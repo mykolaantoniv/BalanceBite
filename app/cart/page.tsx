@@ -79,7 +79,6 @@ export default function CartPage() {
 
   async function doFillCart(overrideToken?: string) {
     const activeToken = overrideToken ?? token
-    console.log("[cart] token:", activeToken?.slice(0, 20))
     setSubmitting(true)
     setResult(null)
 
@@ -107,7 +106,6 @@ export default function CartPage() {
 
       setResult({ success: true, message: `${data.itemCount} товарів додано до кошика Auchan!` })
       setTimeout(() => {
-        window.open('https://auchan.zakaz.ua/uk/cart/', '_blank')
         router.push('/success')
       }, 800)
     } catch {

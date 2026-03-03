@@ -85,8 +85,8 @@ export function AuchanConnectModal({ onClose, onConnected }: Props) {
             <input
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+380XXXXXXXXX"
+              onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="380XXXXXXXXX"
               className="input"
               required
               autoComplete="tel"

@@ -56,8 +56,6 @@ export async function addToCart(
       })),
     }
 
-    console.log('[addToCart] sending', items.length, 'items to /cart/items/')
-    console.log('[addToCart] cookie:', cookieHeader.slice(0, 80))
 
     const res = await fetch(`${API_BASE}/cart/items/`, {
       method: 'POST',
@@ -75,7 +73,6 @@ export async function addToCart(
     })
 
     const text = await res.text()
-    console.log('[addToCart] response', res.status, text.slice(0, 300))
 
     if (!res.ok) {
       let errMsg = `HTTP ${res.status}`
@@ -129,7 +126,6 @@ export async function loginToZakaz(
       let data: Record<string, unknown> = {}
       try { data = JSON.parse(text) } catch { /* not json */ }
 
-      console.log(`[zakaz login] ${endpoint.url} → ${res.status}:`, JSON.stringify(data).slice(0, 200))
 
       if (!res.ok) {
         errors.push(`${res.status}: ${JSON.stringify(data?.errors || data).slice(0, 100)}`)
@@ -142,12 +138,10 @@ export async function loginToZakaz(
 
       // Cookie-based session
       const setCookie = res.headers.get('set-cookie')
-      console.log('[zakaz login] set-cookie:', setCookie?.slice(0, 200))
 
       if (setCookie) {
         const sidMatch = setCookie.match(/(?:__Host-)?zakaz[_-]?sid=([^;,\s]+)/i)
         if (sidMatch?.[1]) {
-          console.log('[zakaz login] extracted sid:', sidMatch[1].slice(0, 40))
           return { token: sidMatch[1] }
         }
         return { token: `cookie:${setCookie}` }
@@ -155,7 +149,6 @@ export async function loginToZakaz(
 
       // user_id returned but no cookie — session must come from cookies
       if (data?.user_id) {
-        console.log('[Zakaz No Token]', JSON.stringify(data))
         errors.push(`Login OK (user_id=${data.user_id}) but no session cookie in response`)
         continue
       }

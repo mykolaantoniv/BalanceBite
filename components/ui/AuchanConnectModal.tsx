@@ -5,7 +5,7 @@ import { useZakazStore } from '@/store'
 
 interface Props {
   onClose: () => void
-  onConnected: () => void
+  onConnected: (token: string) => void
 }
 
 export function AuchanConnectModal({ onClose, onConnected }: Props) {
@@ -42,7 +42,7 @@ export function AuchanConnectModal({ onClose, onConnected }: Props) {
       }
 
       setToken(data.token)
-      onConnected()
+      onConnected(data.token)
     } catch {
       setError('Мережева помилка. Спробуйте ще раз.')
       setLoading(false)

@@ -77,8 +77,9 @@ export default function CartPage() {
     await doFillCart()
   }
 
-  async function doFillCart() {
-    console.log("[cart] token from store:", token?.slice(0, 20))
+  async function doFillCart(overrideToken?: string) {
+    const activeToken = overrideToken ?? token
+    console.log("[cart] token:", activeToken?.slice(0, 20))
     setSubmitting(true)
     setResult(null)
 
@@ -86,7 +87,7 @@ export default function CartPage() {
       const res = await fetch('/api/zakaz/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: cartItems, token }),
+        body: JSON.stringify({ items: cartItems, token: activeToken }),
       })
 
       const data = await res.json()
@@ -229,10 +230,9 @@ export default function CartPage() {
       {showConnectModal && (
         <AuchanConnectModal
           onClose={() => setShowConnectModal(false)}
-          onConnected={() => {
+          onConnected={(t) => {
             setShowConnectModal(false)
-            setConnected(true)
-            doFillCart()
+            doFillCart(t)
           }}
         />
       )}

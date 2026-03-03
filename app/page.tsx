@@ -387,6 +387,16 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
                   <button onClick={() => setSelectedRecipeDetail(null)} style={{ color: 'var(--muted-foreground)' }}>✕</button>
                 </div>
 
+                {selectedRecipeDetail.photo && (
+                  <div className="mb-6 rounded-xl overflow-hidden h-64">
+                    <img
+                      src={selectedRecipeDetail.photo}
+                      alt={selectedRecipeDetail.nameUk}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
                 <p className="text-sm font-body mb-6" style={{ color: 'var(--muted-foreground)' }}>
                   {selectedRecipeDetail.description}
                 </p>

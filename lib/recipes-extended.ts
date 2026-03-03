@@ -35,6 +35,7 @@ export const EXTENDED_RECIPES: ExtendedRecipe[] = [
     mealTypes: ['breakfast'],
     programs: ['maintain', 'gain'],
     description: 'Ніжні та пухкі сирники з творогу - класичний український сніданок',
+    photo: '/recipes/image.png',
     tagsUk: ['Цей творог', 'Класика', 'Швидко'],
     ingredients: [
       { name: 'Творог', quantity: '200 г' },
@@ -65,6 +66,7 @@ export const EXTENDED_RECIPES: ExtendedRecipe[] = [
     mealTypes: ['breakfast'],
     programs: ['maintain', 'gain'],
     description: 'Пухкий омлет з твердим сиром та свіжими овочами',
+    photo: '/recipes/image2.png',
     tagsUk: ['Білки', 'Овочі', 'Швидко'],
     ingredients: [
       { name: 'Яйця', quantity: '2 шт' },
@@ -96,6 +98,7 @@ export const EXTENDED_RECIPES: ExtendedRecipe[] = [
     mealTypes: ['breakfast'],
     programs: ['lose', 'maintain'],
     description: 'Збалансована каша з грецьким йогуртом та свіжими ягодами',
+    photo: '/recipes/image3.png',
     tagsUk: ['Клітковина', 'Антиоксиданти', 'Швидко'],
     ingredients: [
       { name: 'Вівсяні пластівці', quantity: '50 г' },
@@ -128,6 +131,7 @@ export const EXTENDED_RECIPES: ExtendedRecipe[] = [
     mealTypes: ['lunch', 'dinner'],
     programs: ['maintain', 'gain'],
     description: 'Класична італійська паста карбонара з беконом та вершками',
+    photo: '/recipes/image4.png',
     tagsUk: ['Італійська кухня', 'Білки', 'Калорійна'],
     ingredients: [
       { name: 'Спагеті', quantity: '80 г' },
@@ -158,6 +162,7 @@ export const EXTENDED_RECIPES: ExtendedRecipe[] = [
     mealTypes: ['lunch', 'dinner'],
     programs: ['maintain', 'gain'],
     description: 'Куряче філе в терияки соусі з рисом та броколі',
+    photo: '/recipes/image5.png',
     tagsUk: ['Азійська кухня', 'Білки', 'Повільні вуглеводи'],
     ingredients: [
       { name: 'Філе куриное', quantity: '150 г' },
@@ -188,6 +193,7 @@ export const EXTENDED_RECIPES: ExtendedRecipe[] = [
     mealTypes: ['lunch', 'dinner'],
     programs: ['maintain', 'gain'],
     description: 'Ніжна яловичина, тушкована з гречкою та овочами',
+    photo: '/recipes/image6.png',
     tagsUk: ['Яловичина', 'Гречка', 'Ситна'],
     ingredients: [
       { name: 'Яловичина', quantity: '150 г' },
@@ -221,6 +227,7 @@ export const EXTENDED_RECIPES: ExtendedRecipe[] = [
     mealTypes: ['dinner'],
     programs: ['lose', 'maintain'],
     description: 'Легкий теплий салат з курою та авокадо',
+    photo: '/recipes/image7.png',
     tagsUk: ['Легкий', 'Білки', 'Авокадо'],
     ingredients: [
       { name: 'Філе куриное', quantity: '130 г' },
@@ -252,6 +259,7 @@ export const EXTENDED_RECIPES: ExtendedRecipe[] = [
     mealTypes: ['dinner'],
     programs: ['lose', 'maintain'],
     description: 'Ніжна запечена риба з овочами та йогуртовим соусом',
+    photo: '/recipes/image8.png',
     tagsUk: ['Риба', 'Омега-3', 'Легка'],
     ingredients: [
       { name: 'Філе хека/тріски', quantity: '180 г' },
@@ -282,6 +290,7 @@ export const EXTENDED_RECIPES: ExtendedRecipe[] = [
     mealTypes: ['dinner'],
     programs: ['lose', 'maintain'],
     description: 'Запечені котлети з індички з овощевим салатом',
+    photo: '/recipes/image9.png',
     tagsUk: ['Індичка', 'Легка мясо', 'Запечені'],
     ingredients: [
       { name: 'Фарш індичка', quantity: '180 г' },

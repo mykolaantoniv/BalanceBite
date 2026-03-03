@@ -7,8 +7,9 @@ const ALLOWED_EMAILS = [
   // add more here
 ]
 
-const useSecureCookies = false // Azure terminates SSL at proxy, app sees HTTP internally
-const cookiePrefix = ''
+// Azure terminates SSL at the proxy level — app sees HTTP internally.
+// Force non-secure cookie names so getServerSession works correctly.
+const useSecureCookies = false
 const hostName = process.env.NEXTAUTH_URL
   ? new URL(process.env.NEXTAUTH_URL).hostname
   : 'localhost'
@@ -22,61 +23,28 @@ export const authOptions: NextAuthOptions = {
   ],
   cookies: {
     sessionToken: {
-      name: `${cookiePrefix}next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: useSecureCookies,
-        domain: hostName === 'localhost' ? undefined : hostName,
-      },
+      name: 'next-auth.session-token',
+      options: { httpOnly: true, sameSite: 'lax', path: '/', secure: useSecureCookies, domain: hostName === 'localhost' ? undefined : hostName },
     },
     callbackUrl: {
-      name: `${cookiePrefix}next-auth.callback-url`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: useSecureCookies,
-      },
+      name: 'next-auth.callback-url',
+      options: { httpOnly: true, sameSite: 'lax', path: '/', secure: useSecureCookies },
     },
     csrfToken: {
-      name: `next-auth.csrf-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: useSecureCookies,
-      },
+      name: 'next-auth.csrf-token',
+      options: { httpOnly: true, sameSite: 'lax', path: '/', secure: useSecureCookies },
     },
     pkceCodeVerifier: {
-      name: `${cookiePrefix}next-auth.pkce.code_verifier`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: useSecureCookies,
-        maxAge: 900,
-      },
+      name: 'next-auth.pkce.code_verifier',
+      options: { httpOnly: true, sameSite: 'lax', path: '/', secure: useSecureCookies, maxAge: 900 },
     },
     state: {
-      name: `${cookiePrefix}next-auth.state`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: useSecureCookies,
-        maxAge: 900,
-      },
+      name: 'next-auth.state',
+      options: { httpOnly: true, sameSite: 'lax', path: '/', secure: useSecureCookies, maxAge: 900 },
     },
     nonce: {
-      name: `${cookiePrefix}next-auth.nonce`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: useSecureCookies,
-      },
+      name: 'next-auth.nonce',
+      options: { httpOnly: true, sameSite: 'lax', path: '/', secure: useSecureCookies },
     },
   },
   callbacks: {
@@ -105,9 +73,6 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
 }
-
-const handler = NextAuth(authOptions)
-export { handler as GET, handler as POST }
 
 const handler = NextAuth(authOptions)
 export { handler as GET, handler as POST }

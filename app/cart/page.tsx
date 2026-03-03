@@ -78,6 +78,7 @@ export default function CartPage() {
   }
 
   async function doFillCart() {
+    console.log("[cart] token from store:", token?.slice(0, 20))
     setSubmitting(true)
     setResult(null)
 

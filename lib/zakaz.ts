@@ -43,10 +43,10 @@ export async function addToCart(
   sessionToken: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // Build cookie header — token may be raw token or full cookie string
+    // Build cookie header with correct cookie name
     const cookieHeader = sessionToken.startsWith('cookie:')
       ? sessionToken.slice(7)
-      : `zakaz_sid=${sessionToken}; __Host-zakaz-sid=${sessionToken}`
+      : `__Host-zakaz-sid=${sessionToken}`
 
     const payload = {
       items: items.map(item => ({

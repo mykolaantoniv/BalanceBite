@@ -17,7 +17,7 @@ import {
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 type MealType = 'breakfast' | 'lunch' | 'dinner'
-type ProgramType = 'balanced' | 'athletic' | 'vegetarian' | 'vegan' | 'detox'
+type ProgramType = 'lose' | 'maintain' | 'gain'
 
 interface Recipe {
   id: number
@@ -36,23 +36,21 @@ interface Recipe {
 }
 
 const RECIPES: Recipe[] = [
-  { id: 1, nameUk: 'Середземноморська миска з куркою', prepTime: '25 хв', calories: 420, balanceScore: 92, ingredients: ['Куряче філе', 'Рис', 'Помідори', 'Шпинат'], tagsUk: ['Багато білку', 'Збалансовано'], emoji: '🥗', mealTypes: ['lunch', 'dinner'], protein: 38, carbs: 42, fat: 12, programs: ['balanced', 'athletic'] },
-  { id: 2, nameUk: 'Швидке овочеве смаження', prepTime: '15 хв', calories: 310, balanceScore: 88, ingredients: ['Броколі', 'Перець', 'Морква', 'Часник'], tagsUk: ['Вегетаріанське', 'Швидко'], emoji: '🥦', mealTypes: ['lunch', 'dinner'], protein: 12, carbs: 38, fat: 10, programs: ['vegetarian', 'vegan', 'balanced', 'detox'] },
-  { id: 3, nameUk: 'Яєчня з протеїном', prepTime: '10 хв', calories: 350, balanceScore: 85, ingredients: ['Яйця', 'Шпинат', 'Помідори', 'Сир'], tagsUk: ['Багато білку', 'Швидко'], emoji: '🍳', mealTypes: ['breakfast'], protein: 28, carbs: 8, fat: 22, programs: ['balanced', 'athletic'] },
-  { id: 4, nameUk: 'Ситний суп із сочевиці', prepTime: '30 хв', calories: 280, balanceScore: 95, ingredients: ['Квасоля', 'Морква', 'Цибуля', 'Часник'], tagsUk: ['Клітковина', 'Заготовка'], emoji: '🍲', mealTypes: ['lunch', 'dinner'], protein: 18, carbs: 40, fat: 4, programs: ['vegetarian', 'vegan', 'balanced', 'detox'] },
-  { id: 5, nameUk: 'Лосось із солодкою картоплею', prepTime: '20 хв', calories: 480, balanceScore: 97, ingredients: ['Лосось', 'Картопля', 'Броколі'], tagsUk: ['Омега-3', 'Збалансовано'], emoji: '🐟', mealTypes: ['dinner'], protein: 35, carbs: 45, fat: 16, programs: ['balanced', 'athletic'] },
-  { id: 6, nameUk: 'Паста Прімавера в одному горщику', prepTime: '20 хв', calories: 390, balanceScore: 80, ingredients: ['Паста', 'Перець', 'Помідори', 'Часник'], tagsUk: ['Улюблена', 'Легко'], emoji: '🍝', mealTypes: ['lunch', 'dinner'], protein: 14, carbs: 58, fat: 10, programs: ['vegetarian', 'balanced'] },
-  { id: 7, nameUk: 'Нічна вівсянка', prepTime: '5 хв', calories: 290, balanceScore: 82, ingredients: ['Вівсянка', 'Молоко', 'Ягоди'], tagsUk: ['Наперед', 'Швидко'], emoji: '🥣', mealTypes: ['breakfast'], protein: 10, carbs: 45, fat: 8, programs: ['balanced'] },
-  { id: 8, nameUk: 'Парфе з грецьким йогуртом', prepTime: '5 хв', calories: 250, balanceScore: 84, ingredients: ['Йогурт', 'Ягоди', 'Гранола'], tagsUk: ['Швидко', 'Збалансовано'], emoji: '🍨', mealTypes: ['breakfast'], protein: 18, carbs: 30, fat: 6, programs: ['balanced'] },
-  { id: 9, nameUk: 'Курка з авокадо у ролі', prepTime: '10 хв', calories: 440, balanceScore: 90, ingredients: ['Куряче філе', 'Авокадо', 'Помідори', 'Сир'], tagsUk: ['Багато білку', 'Швидко'], emoji: '🌯', mealTypes: ['lunch'], protein: 32, carbs: 35, fat: 18, programs: ['balanced', 'athletic'] },
+  { id: 1, nameUk: 'Середземноморська миска з куркою', prepTime: '25 хв', calories: 420, balanceScore: 92, ingredients: ['Куряче філе', 'Рис', 'Помідори', 'Шпинат'], tagsUk: ['Багато білку', 'Збалансовано'], emoji: '🥗', mealTypes: ['lunch', 'dinner'], protein: 38, carbs: 42, fat: 12, programs: ['maintain', 'gain'] },
+  { id: 2, nameUk: 'Швидке овочеве смаження', prepTime: '15 хв', calories: 310, balanceScore: 88, ingredients: ['Броколі', 'Перець', 'Морква', 'Часник'], tagsUk: ['Вегетаріанське', 'Швидко'], emoji: '🥦', mealTypes: ['lunch', 'dinner'], protein: 12, carbs: 38, fat: 10, programs: ['lose', 'maintain'] },
+  { id: 3, nameUk: 'Яєчня з протеїном', prepTime: '10 хв', calories: 350, balanceScore: 85, ingredients: ['Яйця', 'Шпинат', 'Помідори', 'Сир'], tagsUk: ['Багато білку', 'Швидко'], emoji: '🍳', mealTypes: ['breakfast'], protein: 28, carbs: 8, fat: 22, programs: ['maintain', 'gain'] },
+  { id: 4, nameUk: 'Ситний суп із сочевиці', prepTime: '30 хв', calories: 280, balanceScore: 95, ingredients: ['Квасоля', 'Морква', 'Цибуля', 'Часник'], tagsUk: ['Клітковина', 'Заготовка'], emoji: '🍲', mealTypes: ['lunch', 'dinner'], protein: 18, carbs: 40, fat: 4, programs: ['lose', 'maintain'] },
+  { id: 5, nameUk: 'Лосось із солодкою картоплею', prepTime: '20 хв', calories: 480, balanceScore: 97, ingredients: ['Лосось', 'Картопля', 'Броколі'], tagsUk: ['Омега-3', 'Збалансовано'], emoji: '🐟', mealTypes: ['dinner'], protein: 35, carbs: 45, fat: 16, programs: ['maintain', 'gain'] },
+  { id: 6, nameUk: 'Паста Прімавера в одному горщику', prepTime: '20 хв', calories: 390, balanceScore: 80, ingredients: ['Паста', 'Перець', 'Помідори', 'Часник'], tagsUk: ['Улюблена', 'Легко'], emoji: '🍝', mealTypes: ['lunch', 'dinner'], protein: 14, carbs: 58, fat: 10, programs: ['maintain', 'gain'] },
+  { id: 7, nameUk: 'Нічна вівсянка', prepTime: '5 хв', calories: 290, balanceScore: 82, ingredients: ['Вівсянка', 'Молоко', 'Ягоди'], tagsUk: ['Наперед', 'Швидко'], emoji: '🥣', mealTypes: ['breakfast'], protein: 10, carbs: 45, fat: 8, programs: ['lose', 'maintain'] },
+  { id: 8, nameUk: 'Парфе з грецьким йогуртом', prepTime: '5 хв', calories: 250, balanceScore: 84, ingredients: ['Йогурт', 'Ягоди', 'Гранола'], tagsUk: ['Швидко', 'Збалансовано'], emoji: '🍨', mealTypes: ['breakfast'], protein: 18, carbs: 30, fat: 6, programs: ['lose'] },
+  { id: 9, nameUk: 'Курка з авокадо у ролі', prepTime: '10 хв', calories: 440, balanceScore: 90, ingredients: ['Куряче філе', 'Авокадо', 'Помідори', 'Сир'], tagsUk: ['Багато білку', 'Швидко'], emoji: '🌯', mealTypes: ['lunch'], protein: 32, carbs: 35, fat: 18, programs: ['maintain', 'gain'] },
 ]
 
 const PROGRAM_OPTIONS: Array<{ value: ProgramType; label: string; emoji: string; desc: string }> = [
-  { value: 'balanced', label: 'Збалансоване', emoji: '⚖️', desc: 'Оптимальний баланс білків, жирів та вуглеводів' },
-  { value: 'athletic', label: 'Атлетичне', emoji: '💪', desc: 'Більше білку для розвитку м\'язів' },
-  { value: 'vegetarian', label: 'Вегетаріанське', emoji: '🌱', desc: 'Без м\'яса та риби' },
-  { value: 'vegan', label: 'Веганське', emoji: '🥗', desc: 'Без тваринних продуктів' },
-  { value: 'detox', label: 'Детокс', emoji: '🍯', desc: 'Легкі овочеві страви' },
+  { value: 'lose', label: 'Схуднути', emoji: '📉', desc: 'Низькокалорійні страви для схуднення' },
+  { value: 'maintain', label: 'Зберегти вагу', emoji: '⚖️', desc: 'Збалансовані страви для збереження ваги' },
+  { value: 'gain', label: 'Набрати вагу', emoji: '📈', desc: 'Калорійні страви для набору ваги' },
 ]
 
 const CALORIE_TIERS = [950, 1150, 1350, 1525, 2025]
@@ -142,7 +140,7 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
   onBuildShoppingList: (plan: DayPlan[]) => void
 }) {
   const [numDays, setNumDays] = useState(7)
-  const [selectedProgram, setSelectedProgram] = useState<ProgramType>('balanced')
+  const [selectedProgram, setSelectedProgram] = useState<ProgramType>('maintain')
   const [selectedCalories, setSelectedCalories] = useState(1350)
   const [plan, setPlan] = useState<DayPlan[]>(createEmptyPlan(7))
   const [pickingSlot, setPickingSlot] = useState<{ dayIndex: number; mealIndex: number } | null>(null)

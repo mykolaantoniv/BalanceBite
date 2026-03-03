@@ -98,7 +98,8 @@ export async function loginToZakaz(
   phone: string,
   password: string
 ): Promise<{ token: string } | { error: string }> {
-  const res = await fetch(`https://stores-api.zakaz.ua/user/esputnik/auth`, {
+  // Try standard login endpoint
+  const res = await fetch(`https://stores-api.zakaz.ua/user/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -107,17 +108,24 @@ export async function loginToZakaz(
       'x-version': '65',
       'Origin': 'https://auchan.zakaz.ua',
     },
-    body: JSON.stringify({ login: phone, password }),
+    body: JSON.stringify({ 
+      login: phone, 
+      password,
+      device_type: 'web'
+    }),
   })
 
   if (!res.ok) {
-    return { error: 'Невірний номер телефону або пароль' }
+    const errorData = await res.json().catch(() => ({}))
+    console.error('[Zakaz Login Error]', res.status, errorData)
+    return { error: `Помилка входу (${res.status}). Перевірте номер телефону та пароль.` }
   }
 
   const data = await res.json()
-  const token = data?.token
+  const token = data?.token || data?.session_token || data?.sid
   if (!token) {
-    return { error: 'No token in response' }
+    console.error('[Zakaz No Token]', data)
+    return { error: 'Відповідь сервера не містить токена. Спробуйте ще раз.' }
   }
 
   return { token }

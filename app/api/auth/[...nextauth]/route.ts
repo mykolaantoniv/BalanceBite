@@ -7,8 +7,8 @@ const ALLOWED_EMAILS = [
   // add more here
 ]
 
-const useSecureCookies = process.env.NEXTAUTH_URL?.startsWith('https://')
-const cookiePrefix = useSecureCookies ? '__Secure-' : ''
+const useSecureCookies = false // Azure terminates SSL at proxy, app sees HTTP internally
+const cookiePrefix = ''
 const hostName = process.env.NEXTAUTH_URL
   ? new URL(process.env.NEXTAUTH_URL).hostname
   : 'localhost'
@@ -105,6 +105,9 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
 }
+
+const handler = NextAuth(authOptions)
+export { handler as GET, handler as POST }
 
 const handler = NextAuth(authOptions)
 export { handler as GET, handler as POST }

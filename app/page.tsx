@@ -49,10 +49,10 @@ const RECIPES: Recipe[] = [
   { id: 9, nameUk: 'Курка з авокадо у ролі', prepTime: '10 хв', calories: 440, balanceScore: 90, ingredients: ['Куряче філе', 'Авокадо', 'Помідори', 'Сир'], tagsUk: ['Багато білку', 'Швидко'], emoji: '🌯', mealTypes: ['lunch'], protein: 32, carbs: 35, fat: 18, programs: ['maintain', 'gain'] },
 ]
 
-const PROGRAM_OPTIONS: Array<{ value: ProgramType; label: string; emoji: string; desc: string; calRange: string }> = [
-  { value: 'lose', label: 'Схуднути', emoji: '📉', desc: 'Низькокалорійні страви для схуднення', calRange: '950–2025 ккал' },
-  { value: 'maintain', label: 'Зберегти вагу', emoji: '⚖️', desc: 'Збалансовані страви для збереження ваги', calRange: '1150–2025 ккал' },
-  { value: 'gain', label: 'Набрати вагу', emoji: '📈', desc: 'Калорійні страви для набору ваги', calRange: '2475–3150 ккал' },
+const PROGRAM_OPTIONS: Array<{ value: ProgramType; label: string; emoji: string; desc: string; calRange: string; color: string }> = [
+  { value: 'lose', label: 'Схуднути', emoji: '📉', desc: 'Низькокалорійні страви для схуднення', calRange: '950–2025 ккал', color: 'from-emerald-500/20 to-emerald-500/5 border-emerald-500/40' },
+  { value: 'maintain', label: 'Зберегти вагу', emoji: '⚖️', desc: 'Збалансовані страви для збереження ваги', calRange: '1150–2025 ккал', color: 'from-primary/20 to-primary/5 border-primary/40' },
+  { value: 'gain', label: 'Набрати вагу', emoji: '📈', desc: 'Калорійні страви для набору ваги', calRange: '2475–3150 ккал', color: 'from-orange-500/20 to-orange-500/5 border-orange-500/40' },
 ]
 
 const CALORIE_TIERS = [950, 1150, 1350, 1525, 2025]
@@ -307,9 +307,9 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
                 <button
                   key={prog.value}
                   onClick={() => setSelectedProgram(prog.value)}
-                  className={`relative rounded-2xl border-2 p-5 text-left transition-all duration-200 ${
+                  className={`relative rounded-2xl border-2 p-5 text-left transition-all duration-200 bg-gradient-to-br ${
                     isSelected
-                      ? 'shadow-md scale-[1.02] border-primary bg-primary/5'
+                      ? `shadow-md scale-[1.02] ${prog.color}`
                       : 'hover:scale-[1.01] hover:shadow-sm border-border bg-card'
                   }`}
                 >

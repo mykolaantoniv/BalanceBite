@@ -63,6 +63,12 @@ const GOAL_MULTIPLIERS: Record<ProgramType, number> = {
   gain: 1.2,
 }
 
+const PROGRAM_COLORS: Record<ProgramType, { text: string; bg: string; border: string }> = {
+  lose: { text: 'text-emerald-600', bg: 'bg-emerald-500', border: 'border-emerald-500' },
+  maintain: { text: 'text-primary', bg: 'bg-primary', border: 'border-primary' },
+  gain: { text: 'text-orange-600', bg: 'bg-orange-500', border: 'border-orange-500' },
+}
+
 const PROGRESS_STEPS = [
   'Оберіть програму',
   'Оберіть кількість днів',
@@ -261,33 +267,38 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
           {PROGRESS_STEPS.map((label, idx) => {
             const isActive = idx === currentStep
             const isDone = idx < currentStep
+            const colorClass = selectedProgram ? PROGRAM_COLORS[selectedProgram].border : 'border-primary'
+            const textColorClass = selectedProgram ? PROGRAM_COLORS[selectedProgram].text : 'text-primary'
             return (
               <div key={idx} className="flex items-center">
                 <div className="flex flex-col items-center gap-1.5 min-w-[80px] md:min-w-[100px] px-1">
                   <div
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold font-body transition-all duration-300 border-2 ${
                       isDone
-                        ? 'bg-primary border-primary text-primary-foreground'
+                        ? `${selectedProgram ? `bg-${PROGRAM_COLORS[selectedProgram].bg.split('-')[1]}-500 border-${PROGRAM_COLORS[selectedProgram].bg.split('-')[1]}-500 text-white` : 'bg-primary border-primary text-primary-foreground'}`
                         : isActive
-                        ? 'border-primary text-primary bg-primary/10'
+                        ? `border-current text-current bg-current/10`
                         : 'border-border text-muted-foreground bg-card'
                     }`}
+                    style={isDone ? { borderColor: `var(--${selectedProgram === 'maintain' ? 'primary' : selectedProgram === 'lose' ? '#10b981' : '#f97316'})`, backgroundColor: selectedProgram === 'lose' ? '#10b981' : selectedProgram === 'gain' ? '#f97316' : 'var(--primary)' } : isActive ? { color: selectedProgram === 'lose' ? '#10b981' : selectedProgram === 'gain' ? '#f97316' : 'var(--primary)', borderColor: selectedProgram === 'lose' ? '#10b981' : selectedProgram === 'gain' ? '#f97316' : 'var(--primary)' } : {}}
                   >
                     {isDone ? <Check size={12} strokeWidth={3} /> : idx + 1}
                   </div>
                   <span
                     className={`text-[10px] font-body text-center leading-tight transition-colors ${
-                      isActive ? 'text-primary font-semibold' : isDone ? 'text-foreground' : 'text-muted-foreground'
+                      isActive ? 'font-semibold' : isDone ? 'text-foreground' : 'text-muted-foreground'
                     }`}
+                    style={isActive || isDone ? { color: selectedProgram === 'lose' ? '#10b981' : selectedProgram === 'gain' ? '#f97316' : 'var(--primary)' } : {}}
                   >
                     {label}
                   </span>
                 </div>
                 {idx < PROGRESS_STEPS.length - 1 && (
                   <div
-                    className={`h-0.5 w-6 md:w-10 shrink-0 -mt-5 transition-colors duration-300 ${
-                      idx < currentStep ? 'bg-primary' : 'bg-border'
-                    }`}
+                    className="h-0.5 w-6 md:w-10 shrink-0 -mt-5 transition-colors duration-300"
+                    style={{
+                      backgroundColor: idx < currentStep ? (selectedProgram === 'lose' ? '#10b981' : selectedProgram === 'gain' ? '#f97316' : 'var(--primary)') : 'var(--border)'
+                    }}
                   />
                 )}
               </div>
@@ -309,13 +320,18 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
                   onClick={() => setSelectedProgram(prog.value)}
                   className={`relative rounded-2xl border-2 p-5 text-left transition-all duration-200 bg-gradient-to-br ${prog.color} ${
                     isSelected
-                      ? 'shadow-md scale-[1.02]'
+                      ? 'shadow-lg scale-[1.05]'
                       : 'hover:scale-[1.01] hover:shadow-sm border-border bg-card'
                   }`}
                 >
                   {isSelected && (
-                    <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                      <Check size={11} style={{ color: 'var(--primary-foreground)' }} strokeWidth={3} />
+                    <div
+                      className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center text-white"
+                      style={{
+                        backgroundColor: prog.value === 'lose' ? '#10b981' : prog.value === 'gain' ? '#f97316' : 'var(--primary)'
+                      }}
+                    >
+                      <Check size={12} strokeWidth={3} />
                     </div>
                   )}
                   <p className="font-display text-lg mb-0.5" style={{ color: 'var(--foreground)' }}>{prog.label}</p>

@@ -82,23 +82,30 @@ function RecipeCard({ recipe, matchedIngredients, onAdd, onClickRecipe }: {
 }) {
   return (
     <div
-      className="group recipe-card rounded-2xl border p-6 transition-all duration-300 cursor-pointer"
+      className="group recipe-card rounded-2xl border p-6 transition-all duration-300 cursor-pointer hover:shadow-lg hover:border-primary"
       style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}
       onClick={() => onClickRecipe(recipe)}
+      role="article"
+      aria-label={`${recipe.nameUk} - ${recipe.calories} калорій`}
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && onClickRecipe(recipe)}
     >
       <div className="flex items-start justify-between mb-3">
-        <span className="text-4xl">{recipe.emoji}</span>
+        <span className="text-4xl" aria-hidden="true">{recipe.emoji}</span>
         <div className="flex items-center gap-2">
           <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold font-body"
-            style={{ backgroundColor: getBalanceBg(recipe.balanceScore), color: getBalanceColor(recipe.balanceScore) }}>
-            <Leaf size={11} /> {recipe.balanceScore}%
+            style={{ backgroundColor: getBalanceBg(recipe.balanceScore), color: getBalanceColor(recipe.balanceScore) }}
+            title={`Баланс: ${recipe.balanceScore}%`}>
+            <Leaf size={11} aria-hidden="true" /> {recipe.balanceScore}%
           </span>
           {onAdd && (
             <button
               onClick={e => { e.stopPropagation(); onAdd(recipe) }}
-              className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
-              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
-              <Plus size={14} />
+              className="p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 focus:opacity-100 focus:ring-2 focus:ring-offset-2"
+              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
+              aria-label={`Додати ${recipe.nameUk}`}
+              title={`Додати ${recipe.nameUk} до плану`}>
+              <Plus size={14} aria-hidden="true" />
             </button>
           )}
         </div>
@@ -233,7 +240,7 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
             {PROGRAM_OPTIONS.map(option => (
               <button key={option.value}
                 onClick={() => setSelectedProgram(option.value)}
-                className="px-4 py-2 rounded-full font-body text-sm font-medium transition-all duration-200 border group"
+                className="px-4 py-2 rounded-full font-body text-sm font-medium transition-all duration-200 border group focus:ring-2 focus:ring-offset-2"
                 style={{
                   backgroundColor: selectedProgram === option.value ? 'var(--primary)' : 'var(--card)',
                   borderColor: selectedProgram === option.value ? 'var(--primary)' : 'var(--border)',
@@ -241,7 +248,8 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
                   transform: selectedProgram === option.value ? 'scale(1.05)' : 'scale(1)',
                   boxShadow: selectedProgram === option.value ? '0 2px 8px hsla(152,35%,38%,0.3)' : 'none',
                 }}
-                title={option.desc}>
+                title={option.desc}
+                aria-pressed={selectedProgram === option.value}>
                 {option.emoji} {option.label}
               </button>
             ))}
@@ -251,9 +259,19 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
           <div className="flex flex-wrap items-center justify-center gap-4">
             <div className="flex items-center gap-2 rounded-full px-2 py-1 border"
               style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-              <button onClick={() => numDays > 1 && handleDaysChange(numDays - 1)} className="p-1.5 rounded-full transition-colors hover:bg-secondary"><ChevronLeft size={16} /></button>
-              <span className="font-body font-semibold text-sm min-w-[80px] text-center">{numDays} дн.</span>
-              <button onClick={() => numDays < 14 && handleDaysChange(numDays + 1)} className="p-1.5 rounded-full transition-colors hover:bg-secondary"><ChevronRight size={16} /></button>
+              <button onClick={() => numDays > 1 && handleDaysChange(numDays - 1)}
+                className="p-1.5 rounded-full transition-colors hover:bg-secondary focus:ring-2 focus:ring-offset-2"
+                aria-label="Зменшити кількість днів"
+                disabled={numDays <= 1}>
+                <ChevronLeft size={16} aria-hidden="true" />
+              </button>
+              <span className="font-body font-semibold text-sm min-w-[80px] text-center" aria-live="polite">{numDays} дн.</span>
+              <button onClick={() => numDays < 14 && handleDaysChange(numDays + 1)}
+                className="p-1.5 rounded-full transition-colors hover:bg-secondary focus:ring-2 focus:ring-offset-2"
+                aria-label="Збільшити кількість днів"
+                disabled={numDays >= 14}>
+                <ChevronRight size={16} aria-hidden="true" />
+              </button>
             </div>
 
             <div className="flex items-center gap-2 rounded-full px-2 py-1 border"
@@ -261,17 +279,28 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
               <button onClick={() => {
                 const currentIdx = CALORIE_TIERS.indexOf(selectedCalories)
                 if (currentIdx > 0) setSelectedCalories(CALORIE_TIERS[currentIdx - 1])
-              }} className="p-1.5 rounded-full transition-colors hover:bg-secondary"><ChevronLeft size={16} /></button>
-              <span className="font-body font-semibold text-sm min-w-[100px] text-center" style={{ color: 'var(--foreground)' }}>~{selectedCalories} ккал</span>
+              }}
+                className="p-1.5 rounded-full transition-colors hover:bg-secondary focus:ring-2 focus:ring-offset-2"
+                aria-label="Зменшити калорійність"
+                disabled={CALORIE_TIERS.indexOf(selectedCalories) === 0}>
+                <ChevronLeft size={16} aria-hidden="true" />
+              </button>
+              <span className="font-body font-semibold text-sm min-w-[100px] text-center" style={{ color: 'var(--foreground)' }} aria-live="polite">~{selectedCalories} ккал</span>
               <button onClick={() => {
                 const currentIdx = CALORIE_TIERS.indexOf(selectedCalories)
                 if (currentIdx < CALORIE_TIERS.length - 1) setSelectedCalories(CALORIE_TIERS[currentIdx + 1])
-              }} className="p-1.5 rounded-full transition-colors hover:bg-secondary"><ChevronRight size={16} /></button>
+              }}
+                className="p-1.5 rounded-full transition-colors hover:bg-secondary focus:ring-2 focus:ring-offset-2"
+                aria-label="Збільшити калорійність"
+                disabled={CALORIE_TIERS.indexOf(selectedCalories) === CALORIE_TIERS.length - 1}>
+                <ChevronRight size={16} aria-hidden="true" />
+              </button>
             </div>
 
             <button onClick={autoFill}
-              className="px-5 py-2 rounded-full font-body text-sm font-semibold transition-opacity hover:opacity-90"
-              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
+              className="px-5 py-2 rounded-full font-body text-sm font-semibold transition-all hover:opacity-90 focus:ring-2 focus:ring-offset-2"
+              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
+              title="Автоматично заповнити план рецептами">
               ✨ Заповнити автоматично
             </button>
           </div>
@@ -319,12 +348,12 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
                       {MEAL_TYPE_LABELS[slot.mealType]}
                     </p>
                     {slot.recipe ? (
-                      <div className="relative group rounded-xl border p-3 transition-colors"
+                      <div className="relative group rounded-xl border p-3 transition-colors hover:border-red-300"
                         style={{ backgroundColor: 'var(--background)', borderColor: 'var(--border)' }}>
                         <div className="flex items-center gap-2">
-                          <span className="text-xl">{slot.recipe.emoji}</span>
+                          <span className="text-xl" aria-hidden="true">{slot.recipe.emoji}</span>
                           <div className="flex-1 min-w-0">
-                            <p className="font-body text-sm font-medium truncate" style={{ color: 'var(--foreground)' }}>{slot.recipe.nameUk}</p>
+                            <p className="font-body text-sm font-medium truncate" style={{ color: 'var(--foreground)' }} title={slot.recipe.nameUk}>{slot.recipe.nameUk}</p>
                             <p className="text-xs font-body" style={{ color: 'var(--muted-foreground)' }}>{slot.recipe.calories} кал · {slot.recipe.prepTime}</p>
                           </div>
                           <span className="px-2 py-0.5 rounded-full text-xs font-semibold font-body flex-shrink-0"
@@ -333,20 +362,23 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
                           </span>
                         </div>
                         <button onClick={() => removeRecipe(dayIndex, mealIndex)}
-                          className="absolute -top-2 -right-2 p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          style={{ backgroundColor: 'hsl(0,65%,50%)', color: 'white' }}>
-                          <Trash2 size={12} />
+                          className="absolute top-2 right-2 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110 focus:opacity-100 focus:ring-2 focus:ring-offset-2"
+                          style={{ backgroundColor: 'hsl(0,65%,50%)', color: 'white' }}
+                          aria-label={`Видалити ${slot.recipe.nameUk} з плану`}
+                          title={`Видалити ${slot.recipe.nameUk}`}>
+                          <Trash2 size={14} aria-hidden="true" />
                         </button>
                       </div>
                     ) : (
                       <button onClick={() => setPickingSlot({ dayIndex, mealIndex })}
-                        className="w-full rounded-xl border-2 border-dashed p-4 text-center text-sm font-body transition-colors"
+                        className="w-full rounded-xl border-2 border-dashed p-4 text-center text-sm font-body transition-all duration-200 focus:ring-2 focus:ring-offset-2 hover:shadow-sm"
                         style={{
                           borderColor: pickingSlot?.dayIndex === dayIndex && pickingSlot?.mealIndex === mealIndex ? 'var(--primary)' : 'var(--border)',
                           color: pickingSlot?.dayIndex === dayIndex && pickingSlot?.mealIndex === mealIndex ? 'var(--primary)' : 'var(--muted-foreground)',
                           backgroundColor: pickingSlot?.dayIndex === dayIndex && pickingSlot?.mealIndex === mealIndex ? 'hsla(152,35%,38%,0.05)' : 'transparent',
-                        }}>
-                        <Plus size={16} className="mx-auto mb-1" />
+                        }}
+                        aria-label={`Додати страву для ${MEAL_TYPE_LABELS[slot.mealType]}`}>
+                        <Plus size={16} className="mx-auto mb-1" aria-hidden="true" />
                         Додати страву
                       </button>
                     )}
@@ -362,8 +394,9 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
           <div className="mt-10 text-center">
             <button
               onClick={() => onBuildShoppingList(plan)}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-body font-semibold text-base transition-opacity hover:opacity-90"
-              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
+              className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-body font-semibold text-base transition-all hover:opacity-90 focus:ring-2 focus:ring-offset-2"
+              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
+              aria-label="Скласти список покупок на основі плану">
               🛒 Скласти список покупок →
             </button>
           </div>
@@ -373,7 +406,12 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
         {pickingSlot && (
           <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-4"
             style={{ backgroundColor: 'hsla(150,20%,10%,0.4)', backdropFilter: 'blur(4px)' }}
-            onClick={() => { setPickingSlot(null); setSelectedRecipeDetail(null); }}>
+            onClick={() => { setPickingSlot(null); setSelectedRecipeDetail(null); }}
+            onKeyDown={(e) => e.key === 'Escape' && (setPickingSlot(null), setSelectedRecipeDetail(null))}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Вибір рецепту"
+          >
 
             {/* Recipe Details View */}
             {selectedRecipeDetail && (
@@ -384,7 +422,13 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
                   <h2 className="font-display text-2xl" style={{ color: 'var(--foreground)' }}>
                     {selectedRecipeDetail.emoji} {selectedRecipeDetail.nameUk}
                   </h2>
-                  <button onClick={() => setSelectedRecipeDetail(null)} style={{ color: 'var(--muted-foreground)' }}>✕</button>
+                  <button
+                    onClick={() => setSelectedRecipeDetail(null)}
+                    className="p-1.5 rounded-full hover:bg-secondary transition-colors focus:ring-2 focus:ring-offset-2"
+                    style={{ color: 'var(--muted-foreground)' }}
+                    aria-label="Закрити деталі рецепту">
+                    ✕
+                  </button>
                 </div>
 
                 {selectedRecipeDetail.photo && (
@@ -462,8 +506,9 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
                     setSelectedRecipeDetail(null);
                     setPickingSlot(null);
                   }}
-                  className="w-full py-3 rounded-full font-body font-semibold transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
+                  className="w-full py-3 rounded-full font-body font-semibold transition-all hover:opacity-90 focus:ring-2 focus:ring-offset-2"
+                  style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
+                  title={`Вибрати ${selectedRecipeDetail.nameUk} для плану`}>
                   Вибрати цю страву
                 </button>
               </div>
@@ -478,7 +523,13 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
                   <h3 className="font-display text-xl" style={{ color: 'var(--foreground)' }}>
                     Оберіть {pickerMealType === 'breakfast' ? 'сніданок' : pickerMealType === 'lunch' ? 'обід' : 'вечерю'}
                   </h3>
-                  <button onClick={() => setPickingSlot(null)} style={{ color: 'var(--muted-foreground)' }}>✕</button>
+                  <button
+                    onClick={() => setPickingSlot(null)}
+                    className="p-1.5 rounded-full hover:bg-secondary transition-colors focus:ring-2 focus:ring-offset-2"
+                    style={{ color: 'var(--muted-foreground)' }}
+                    aria-label="Закрити вибір рецепту">
+                    ✕
+                  </button>
                 </div>
                 <p className="text-sm font-body mb-4" style={{ color: 'var(--muted-foreground)' }}>
                   {plan[pickingSlot.dayIndex].label} · {pickerMealType && MEAL_TYPE_LABELS[pickerMealType]}
@@ -498,30 +549,48 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
                         </p>
                       </div>
                       <div className="space-y-3">
-                        {EXTENDED_RECIPES.filter(r =>
-                          r.mealTypes.includes(pickerMealType || 'breakfast') &&
-                          r.programs.includes(selectedProgram) &&
-                          r.calories <= remainingBudget * 1.1
-                        ).map(recipe => (
-                          <button key={recipe.id} onClick={() => setSelectedRecipeDetail(recipe)}
-                            className="w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all hover:border-green-500"
-                            style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-                            <span className="text-2xl">{recipe.emoji}</span>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-body text-sm font-medium" style={{ color: 'var(--foreground)' }}>{recipe.nameUk}</p>
-                              <p className="text-xs font-body" style={{ color: 'var(--muted-foreground)' }}>
-                                {recipe.calories} кал · {recipe.prepTime}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="px-2 py-0.5 rounded-full text-xs font-semibold font-body"
-                                style={{ backgroundColor: getBalanceBg(recipe.balanceScore), color: getBalanceColor(recipe.balanceScore) }}>
-                                {recipe.balanceScore}%
-                              </span>
-                              <Info size={14} style={{ color: 'var(--muted-foreground)' }} />
-                            </div>
-                          </button>
-                        ))}
+                        {(() => {
+                          const filteredRecipes = EXTENDED_RECIPES.filter(r =>
+                            r.mealTypes.includes(pickerMealType || 'breakfast') &&
+                            r.programs.includes(selectedProgram) &&
+                            r.calories <= remainingBudget * 1.1
+                          );
+
+                          if (filteredRecipes.length === 0) {
+                            return (
+                              <div className="text-center py-8">
+                                <p className="text-sm font-body mb-2" style={{ color: 'var(--muted-foreground)' }}>
+                                  На жаль, немає рецептів, які відповідають вашим параметрам
+                                </p>
+                                <p className="text-xs font-body" style={{ color: 'var(--muted-foreground)' }}>
+                                  Спробуйте вибрати іншу калорійність або змініть програму
+                                </p>
+                              </div>
+                            );
+                          }
+
+                          return filteredRecipes.map(recipe => (
+                            <button key={recipe.id} onClick={() => setSelectedRecipeDetail(recipe)}
+                              className="w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all hover:border-green-500 focus:ring-2 focus:ring-offset-2"
+                              style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
+                              aria-label={`Вибрати ${recipe.nameUk} (${recipe.calories} ккал)`}>
+                              <span className="text-2xl" aria-hidden="true">{recipe.emoji}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-body text-sm font-medium" style={{ color: 'var(--foreground)' }}>{recipe.nameUk}</p>
+                                <p className="text-xs font-body" style={{ color: 'var(--muted-foreground)' }}>
+                                  {recipe.calories} кал · {recipe.prepTime}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded-full text-xs font-semibold font-body"
+                                  style={{ backgroundColor: getBalanceBg(recipe.balanceScore), color: getBalanceColor(recipe.balanceScore) }}>
+                                  {recipe.balanceScore}%
+                                </span>
+                                <Info size={14} style={{ color: 'var(--muted-foreground)' }} aria-hidden="true" />
+                              </div>
+                            </button>
+                          ));
+                        })()}
                       </div>
                     </>
                   )
@@ -675,7 +744,7 @@ export default function LandingPage() {
             Розкажіть, що у вашому холодильнику. Ми підберемо швидкі, збалансовані рецепти, які сподобаються всій родині.
           </p>
           <a href="#ingredients"
-            className="animate-fade-up-delay-3 inline-flex items-center gap-2 px-8 py-4 rounded-full font-body font-semibold text-lg transition-opacity hover:opacity-90"
+            className="animate-fade-up-delay-3 inline-flex items-center gap-2 px-8 py-4 rounded-full font-body font-semibold text-lg transition-all hover:opacity-90 focus:ring-2 focus:ring-offset-2 focus:ring-white"
             style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
             Почати
           </a>
@@ -703,14 +772,16 @@ export default function LandingPage() {
               const selected = selectedIngredients.includes(ing)
               return (
                 <button key={ing} onClick={() => toggleIngredient(ing)}
-                  className="px-4 py-2 rounded-full font-body text-sm font-medium transition-all duration-200 border"
+                  className="px-4 py-2 rounded-full font-body text-sm font-medium transition-all duration-200 border focus:ring-2 focus:ring-offset-2"
                   style={{
                     backgroundColor: selected ? 'var(--primary)' : 'var(--card)',
                     borderColor: selected ? 'var(--primary)' : 'var(--border)',
                     color: selected ? 'var(--primary-foreground)' : 'var(--card-foreground)',
                     transform: selected ? 'scale(1.05)' : 'scale(1)',
                     boxShadow: selected ? '0 2px 8px hsla(152,35%,38%,0.3)' : 'none',
-                  }}>
+                  }}
+                  title={selected ? `Видалити ${ing}` : `Додати ${ing}`}
+                  aria-pressed={selected}>
                   {selected && <span className="mr-1">✓</span>}
                   {ing}
                 </button>
@@ -722,12 +793,14 @@ export default function LandingPage() {
             <input value={customIngredient} onChange={e => setCustomIngredient(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addCustom()}
               placeholder="Додати інший інгредієнт..."
-              className="flex-1 px-4 py-3 rounded-full font-body text-sm outline-none"
-              style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', color: 'var(--foreground)' }} />
+              className="flex-1 px-4 py-3 rounded-full font-body text-sm outline-none transition-all focus:ring-2 focus:ring-offset-2"
+              style={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', color: 'var(--foreground)' }}
+              aria-label="Поле для додавання нового інгредієнта" />
             <button onClick={addCustom}
-              className="p-3 rounded-full transition-opacity hover:opacity-90"
-              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
-              <Plus size={18} />
+              className="p-3 rounded-full transition-all hover:opacity-90 focus:ring-2 focus:ring-offset-2"
+              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
+              aria-label="Додати інгредієнт">
+              <Plus size={18} aria-hidden="true" />
             </button>
           </div>
 
@@ -759,12 +832,14 @@ export default function LandingPage() {
             { key: 'meal-plan' as Mode, label: 'Меню на тиждень', icon: CalendarDays },
           ]).map(({ key, label, icon: Icon }) => (
             <button key={key} onClick={() => setMode(key)}
-              className="relative flex items-center gap-2 px-5 py-2.5 rounded-full font-body text-sm font-semibold transition-all duration-300"
+              className="relative flex items-center gap-2 px-5 py-2.5 rounded-full font-body text-sm font-semibold transition-all duration-300 focus:ring-2 focus:ring-offset-2"
               style={{
                 backgroundColor: mode === key ? 'var(--primary)' : 'transparent',
                 color: mode === key ? 'var(--primary-foreground)' : 'var(--muted-foreground)',
-              }}>
-              <Icon size={16} />
+              }}
+              aria-pressed={mode === key}
+              title={label}>
+              <Icon size={16} aria-hidden="true" />
               {label}
             </button>
           ))}

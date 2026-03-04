@@ -13,7 +13,7 @@ import {
   UtensilsCrossed, CalendarDays,
   ShieldCheck, Clock, Heart,
   Calendar, Flame, ChevronLeft, ChevronRight, Trash2,
-  ChefHat, Zap, Info
+  ChefHat, Zap, Info, Users, Check, ShoppingCart
 } from 'lucide-react'
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -49,13 +49,27 @@ const RECIPES: Recipe[] = [
   { id: 9, nameUk: 'Курка з авокадо у ролі', prepTime: '10 хв', calories: 440, balanceScore: 90, ingredients: ['Куряче філе', 'Авокадо', 'Помідори', 'Сир'], tagsUk: ['Багато білку', 'Швидко'], emoji: '🌯', mealTypes: ['lunch'], protein: 32, carbs: 35, fat: 18, programs: ['maintain', 'gain'] },
 ]
 
-const PROGRAM_OPTIONS: Array<{ value: ProgramType; label: string; emoji: string; desc: string }> = [
-  { value: 'lose', label: 'Схуднути', emoji: '📉', desc: 'Низькокалорійні страви для схуднення' },
-  { value: 'maintain', label: 'Зберегти вагу', emoji: '⚖️', desc: 'Збалансовані страви для збереження ваги' },
-  { value: 'gain', label: 'Набрати вагу', emoji: '📈', desc: 'Калорійні страви для набору ваги' },
+const PROGRAM_OPTIONS: Array<{ value: ProgramType; label: string; emoji: string; desc: string; calRange: string }> = [
+  { value: 'lose', label: 'Схуднути', emoji: '📉', desc: 'Низькокалорійні страви для схуднення', calRange: '950–2025 ккал' },
+  { value: 'maintain', label: 'Зберегти вагу', emoji: '⚖️', desc: 'Збалансовані страви для збереження ваги', calRange: '1150–2025 ккал' },
+  { value: 'gain', label: 'Набрати вагу', emoji: '📈', desc: 'Калорійні страви для набору ваги', calRange: '2475–3150 ккал' },
 ]
 
 const CALORIE_TIERS = [950, 1150, 1350, 1525, 2025]
+
+const GOAL_MULTIPLIERS: Record<ProgramType, number> = {
+  lose: 0.85,
+  maintain: 1.0,
+  gain: 1.2,
+}
+
+const PROGRESS_STEPS = [
+  'Оберіть програму',
+  'Оберіть кількість днів',
+  'Оберіть кількість осіб',
+  'Додайте страви',
+  'Створіть список покупок',
+]
 
 const COMMON_INGREDIENTS = ['Куряче філе', 'Рис', 'Яйця', 'Помідори', 'Цибуля', 'Часник', 'Броколі', 'Паста', 'Перець', 'Шпинат', 'Картопля', 'Морква', 'Сир', 'Квасоля', 'Лосось', 'Авокадо', 'Тофу', 'Гриби']
 const MEAL_TYPE_LABELS: Record<MealType, string> = { breakfast: '🌅 Сніданок', lunch: '☀️ Обід', dinner: '🌙 Вечеря' }
@@ -146,16 +160,26 @@ function createEmptyPlan(days: number): DayPlan[] {
 
 function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
   selectedIngredients: string[]
-  onBuildShoppingList: (plan: DayPlan[]) => void
+  onBuildShoppingList: (plan: DayPlan[], numPersons: number, selectedProgram: ProgramType | null) => void
 }) {
   const [numDays, setNumDays] = useState(7)
-  const [selectedProgram, setSelectedProgram] = useState<ProgramType>('maintain')
+  const [numPersons, setNumPersons] = useState(2)
+  const [selectedProgram, setSelectedProgram] = useState<ProgramType | null>(null)
   const [selectedCalories, setSelectedCalories] = useState(1350)
   const [plan, setPlan] = useState<DayPlan[]>(createEmptyPlan(7))
   const [pickingSlot, setPickingSlot] = useState<{ dayIndex: number; mealIndex: number } | null>(null)
   const [selectedRecipeDetail, setSelectedRecipeDetail] = useState<typeof EXTENDED_RECIPES[0] | null>(null)
 
   const handleDaysChange = (days: number) => { setNumDays(days); setPlan(createEmptyPlan(days)); setPickingSlot(null) }
+
+  // Derive current step for progress indicator
+  const currentStep = (() => {
+    if (!selectedProgram) return 0
+    const hasAnyMeal = plan.some(d => d.meals.some(m => m.recipe))
+    if (!hasAnyMeal) return 3
+    const allFilled = plan.every(d => d.meals.every(m => m.recipe))
+    return allFilled ? 4 : 3
+  })()
 
   const assignRecipe = (recipe: Recipe) => {
     if (!pickingSlot) return
@@ -172,6 +196,7 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
   }
 
   const autoFill = () => {
+    if (!selectedProgram) return
     const mealsPerDay = 3
     const caloriesPerMeal = selectedCalories / mealsPerDay
     const calorieRange = { min: caloriesPerMeal * 0.9, max: caloriesPerMeal * 1.1 }
@@ -211,7 +236,7 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
   const mealsPerDay = 3
   const caloriesPerMeal = selectedCalories / mealsPerDay
   const calorieRange = { min: caloriesPerMeal * 0.9, max: caloriesPerMeal * 1.1 }
-  const pickerRecipes = pickerMealType
+  const pickerRecipes = pickerMealType && selectedProgram
     ? RECIPES.filter(r =>
         r.mealTypes.includes(pickerMealType) &&
         r.programs.includes(selectedProgram) &&
@@ -221,116 +246,166 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
     : []
 
   const avgCaloriesPerMeal = filledSlots > 0 ? Math.round(totalCalories / filledSlots) : 0
-  const calorieDeviation = filledSlots > 0 ? Math.round(((totalCalories / numDays) / selectedCalories - 1) * 100) : 0
+  const calorieDeviation = filledSlots > 0 && selectedProgram ? Math.round(((totalCalories / numDays) / selectedCalories - 1) * 100) : 0
 
   return (
-    <section className="py-20 px-6">
+    <section id="meal-planner" className="py-20 px-6">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-10">
-          <h2 className="font-display text-4xl md:text-5xl mb-4" style={{ color: 'var(--foreground)' }}>Меню на тиждень</h2>
-          <p className="text-lg font-body max-w-lg mx-auto" style={{ color: 'var(--muted-foreground)' }}>
-            Складіть збалансований план харчування. Натисніть на будь-який слот, щоб додати рецепт.
-          </p>
+        <div className="text-center mb-8">
+          <h2 className="font-display text-4xl md:text-5xl mb-2" style={{ color: 'var(--foreground)' }}>Планування харчування</h2>
+          <p className="text-sm font-body" style={{ color: 'var(--muted-foreground)' }}>Потрібно менше 1 хвилини, щоб створити готовий план.</p>
         </div>
 
-        {/* Controls */}
-        <div className="space-y-4 mb-8">
-          {/* Program Selector */}
-          <div className="flex flex-wrap gap-2 justify-center">
-            {PROGRAM_OPTIONS.map(option => (
-              <button key={option.value}
-                onClick={() => setSelectedProgram(option.value)}
-                className="px-4 py-2 rounded-full font-body text-sm font-medium transition-all duration-200 border group focus:ring-2 focus:ring-offset-2"
-                style={{
-                  backgroundColor: selectedProgram === option.value ? 'var(--primary)' : 'var(--card)',
-                  borderColor: selectedProgram === option.value ? 'var(--primary)' : 'var(--border)',
-                  color: selectedProgram === option.value ? 'var(--primary-foreground)' : 'var(--card-foreground)',
-                  transform: selectedProgram === option.value ? 'scale(1.05)' : 'scale(1)',
-                  boxShadow: selectedProgram === option.value ? '0 2px 8px hsla(152,35%,38%,0.3)' : 'none',
-                }}
-                title={option.desc}
-                aria-pressed={selectedProgram === option.value}>
-                {option.emoji} {option.label}
+        {/* Progress stepper */}
+        <div className="flex items-center justify-center gap-0 mb-10 overflow-x-auto pb-1">
+          {PROGRESS_STEPS.map((label, idx) => {
+            const isActive = idx === currentStep
+            const isDone = idx < currentStep
+            return (
+              <div key={idx} className="flex items-center">
+                <div className="flex flex-col items-center gap-1.5 min-w-[80px] md:min-w-[100px] px-1">
+                  <div
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold font-body transition-all duration-300 border-2 ${
+                      isDone
+                        ? 'bg-primary border-primary text-primary-foreground'
+                        : isActive
+                        ? 'border-primary text-primary bg-primary/10'
+                        : 'border-border text-muted-foreground bg-card'
+                    }`}
+                  >
+                    {isDone ? <Check size={12} strokeWidth={3} /> : idx + 1}
+                  </div>
+                  <span
+                    className={`text-[10px] font-body text-center leading-tight transition-colors ${
+                      isActive ? 'text-primary font-semibold' : isDone ? 'text-foreground' : 'text-muted-foreground'
+                    }`}
+                  >
+                    {label}
+                  </span>
+                </div>
+                {idx < PROGRESS_STEPS.length - 1 && (
+                  <div
+                    className={`h-0.5 w-6 md:w-10 shrink-0 -mt-5 transition-colors duration-300 ${
+                      idx < currentStep ? 'bg-primary' : 'bg-border'
+                    }`}
+                  />
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* STEP 0: Program selection */}
+        <div className="mb-8">
+          <p className="text-center text-sm font-body font-semibold text-muted-foreground uppercase tracking-wider mb-4">
+            Оберіть програму
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {PROGRAM_OPTIONS.map((prog) => {
+              const isSelected = selectedProgram === prog.value
+              return (
+                <button
+                  key={prog.value}
+                  onClick={() => setSelectedProgram(prog.value)}
+                  className={`relative rounded-2xl border-2 p-5 text-left transition-all duration-200 ${
+                    isSelected
+                      ? 'shadow-md scale-[1.02] border-primary bg-primary/5'
+                      : 'hover:scale-[1.01] hover:shadow-sm border-border bg-card'
+                  }`}
+                >
+                  {isSelected && (
+                    <div className="absolute top-3 right-3 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                      <Check size={11} style={{ color: 'var(--primary-foreground)' }} strokeWidth={3} />
+                    </div>
+                  )}
+                  <p className="font-display text-lg mb-0.5" style={{ color: 'var(--foreground)' }}>{prog.label}</p>
+                  <p className="font-body text-xs mb-2" style={{ color: 'var(--muted-foreground)' }}>{prog.desc}</p>
+                  <p className="font-body text-sm font-semibold" style={{ color: 'var(--foreground)' }}>{prog.calRange}</p>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* STEPS 1 & 2: Days + Persons (locked until program selected) */}
+        <div className={`transition-all duration-300 ${!selectedProgram ? 'opacity-40 pointer-events-none select-none' : ''}`}>
+          {/* Settings bar */}
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-8">
+            {/* Days */}
+            <div className="flex items-center gap-1 bg-card rounded-full px-2 py-1 border"
+              style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+              <button onClick={() => numDays > 1 && setNumDays(numDays - 1)}
+                className="p-1.5 rounded-full transition-colors hover:bg-secondary disabled:opacity-40 focus:ring-2 focus:ring-offset-2"
+                disabled={numDays <= 1}
+                aria-label="Зменшити кількість днів">
+                <ChevronLeft size={16} aria-hidden="true" />
               </button>
-            ))}
+              <span className="font-body font-semibold text-sm min-w-[90px] text-center"
+                style={{ color: 'var(--foreground)' }} aria-live="polite">
+                {numDays} {numDays === 1 ? 'день' : numDays < 5 ? 'дні' : 'днів'}
+              </span>
+              <button onClick={() => numDays < 14 && setNumDays(numDays + 1)}
+                className="p-1.5 rounded-full transition-colors hover:bg-secondary disabled:opacity-40 focus:ring-2 focus:ring-offset-2"
+                disabled={numDays >= 14}
+                aria-label="Збільшити кількість днів">
+                <ChevronRight size={16} aria-hidden="true" />
+              </button>
+            </div>
+
+            {/* Persons */}
+            <div className="flex items-center gap-1 bg-card rounded-full px-2 py-1 border"
+              style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+              <button onClick={() => numPersons > 1 && setNumPersons(numPersons - 1)}
+                className="p-1.5 rounded-full transition-colors hover:bg-secondary disabled:opacity-40 focus:ring-2 focus:ring-offset-2"
+                disabled={numPersons <= 1}
+                aria-label="Зменшити кількість осіб">
+                <ChevronLeft size={16} aria-hidden="true" />
+              </button>
+              <span className="font-body font-semibold text-sm min-w-[110px] text-center flex items-center justify-center gap-1.5"
+                style={{ color: 'var(--foreground)' }} aria-live="polite">
+                <Users size={14} style={{ color: 'var(--primary)' }} aria-hidden="true" />
+                {numPersons} {numPersons === 1 ? 'особа' : numPersons < 5 ? 'особи' : 'осіб'}
+              </span>
+              <button onClick={() => numPersons < 12 && setNumPersons(numPersons + 1)}
+                className="p-1.5 rounded-full transition-colors hover:bg-secondary disabled:opacity-40 focus:ring-2 focus:ring-offset-2"
+                disabled={numPersons >= 12}
+                aria-label="Збільшити кількість осіб">
+                <ChevronRight size={16} aria-hidden="true" />
+              </button>
+            </div>
           </div>
 
-          {/* Day and Calorie Controls */}
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <div className="flex items-center gap-2 rounded-full px-2 py-1 border"
-              style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-              <button onClick={() => numDays > 1 && handleDaysChange(numDays - 1)}
-                className="p-1.5 rounded-full transition-colors hover:bg-secondary focus:ring-2 focus:ring-offset-2"
-                aria-label="Зменшити кількість днів"
-                disabled={numDays <= 1}>
-                <ChevronLeft size={16} aria-hidden="true" />
-              </button>
-              <span className="font-body font-semibold text-sm min-w-[80px] text-center" aria-live="polite">{numDays} дн.</span>
-              <button onClick={() => numDays < 14 && handleDaysChange(numDays + 1)}
-                className="p-1.5 rounded-full transition-colors hover:bg-secondary focus:ring-2 focus:ring-offset-2"
-                aria-label="Збільшити кількість днів"
-                disabled={numDays >= 14}>
-                <ChevronRight size={16} aria-hidden="true" />
-              </button>
+          {/* Summary bar and Shopping list CTA */}
+          <div className="flex flex-wrap justify-center gap-6 mb-8 text-sm font-body">
+            <div className="flex items-center gap-2" style={{ color: 'var(--muted-foreground)' }}>
+              <Calendar size={16} style={{ color: 'var(--primary)' }} aria-hidden="true" />
+              <span>{filledSlots}/{totalSlots} страв заплановано</span>
             </div>
+            {filledSlots > 0 && (
+              <div className="flex items-center gap-2" style={{ color: 'var(--muted-foreground)' }}>
+                <Flame size={16} style={{ color: 'hsl(28,70%,55%)' }} aria-hidden="true" />
+                <span>~{Math.round(totalCalories / numDays)} ккал/день</span>
+              </div>
+            )}
+            {avgBalance > 0 && (
+              <div className="flex items-center gap-2" style={{ color: getBalanceColor(avgBalance) }}>
+                <Leaf size={16} aria-hidden="true" />
+                <span>{avgBalance}% сер. баланс</span>
+              </div>
+            )}
+          </div>
 
-            <div className="flex items-center gap-2 rounded-full px-2 py-1 border"
-              style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
-              <button onClick={() => {
-                const currentIdx = CALORIE_TIERS.indexOf(selectedCalories)
-                if (currentIdx > 0) setSelectedCalories(CALORIE_TIERS[currentIdx - 1])
-              }}
-                className="p-1.5 rounded-full transition-colors hover:bg-secondary focus:ring-2 focus:ring-offset-2"
-                aria-label="Зменшити калорійність"
-                disabled={CALORIE_TIERS.indexOf(selectedCalories) === 0}>
-                <ChevronLeft size={16} aria-hidden="true" />
-              </button>
-              <span className="font-body font-semibold text-sm min-w-[100px] text-center" style={{ color: 'var(--foreground)' }} aria-live="polite">~{selectedCalories} ккал</span>
-              <button onClick={() => {
-                const currentIdx = CALORIE_TIERS.indexOf(selectedCalories)
-                if (currentIdx < CALORIE_TIERS.length - 1) setSelectedCalories(CALORIE_TIERS[currentIdx + 1])
-              }}
-                className="p-1.5 rounded-full transition-colors hover:bg-secondary focus:ring-2 focus:ring-offset-2"
-                aria-label="Збільшити калорійність"
-                disabled={CALORIE_TIERS.indexOf(selectedCalories) === CALORIE_TIERS.length - 1}>
-                <ChevronRight size={16} aria-hidden="true" />
-              </button>
-            </div>
-
-            <button onClick={autoFill}
-              className="px-5 py-2 rounded-full font-body text-sm font-semibold transition-all hover:opacity-90 focus:ring-2 focus:ring-offset-2"
+          <div className="flex justify-center mb-8">
+            <button
+              onClick={() => onBuildShoppingList(plan, numPersons, selectedProgram)}
+              disabled={filledSlots === 0}
+              className="flex items-center gap-2 font-body font-semibold text-sm rounded-full px-6 py-2.5 hover:opacity-90 transition-colors disabled:opacity-40 disabled:pointer-events-none focus:ring-2 focus:ring-offset-2"
               style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
-              title="Автоматично заповнити план рецептами">
-              ✨ Заповнити автоматично
+              aria-label="Скласти список покупок">
+              <ShoppingCart size={16} aria-hidden="true" />
+              Створити список покупок
             </button>
           </div>
-        </div>
-
-        {/* Summary */}
-        <div className="flex flex-wrap justify-center gap-6 mb-10 text-sm font-body">
-          <div className="flex items-center gap-2" style={{ color: 'var(--muted-foreground)' }}>
-            <Calendar size={16} style={{ color: 'var(--primary)' }} />
-            <span>{filledSlots}/{totalSlots} прийомів заплановано</span>
-          </div>
-          <div className="flex items-center gap-2" style={{ color: 'var(--muted-foreground)' }}>
-            <Flame size={16} style={{ color: 'hsl(28,70%,55%)' }} />
-            <span>{filledSlots > 0 ? Math.round(totalCalories / numDays) : '—'} / {selectedCalories} ккал/день
-              {filledSlots > 0 && calorieDeviation !== 0 && (
-                <span style={{ color: Math.abs(calorieDeviation) <= 10 ? 'var(--primary)' : 'hsl(28,70%,55%)' }}>
-                  {' '}({calorieDeviation > 0 ? '+' : ''}{calorieDeviation}%)
-                </span>
-              )}
-            </span>
-          </div>
-          {avgBalance > 0 && (
-            <div className="flex items-center gap-2" style={{ color: getBalanceColor(avgBalance) }}>
-              <Leaf size={16} /><span>{avgBalance}% сер. баланс</span>
-            </div>
-          )}
-          <div className="flex items-center gap-2" style={{ color: 'var(--muted-foreground)' }}>
-            <span>{PROGRAM_OPTIONS.find(p => p.value === selectedProgram)?.emoji} {PROGRAM_OPTIONS.find(p => p.value === selectedProgram)?.label}</span>
-          </div>
-        </div>
 
         {/* Grid */}
         <div className="space-y-4">
@@ -388,19 +463,7 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
             </div>
           ))}
         </div>
-
-        {/* CTA */}
-        {filledSlots > 0 && (
-          <div className="mt-10 text-center">
-            <button
-              onClick={() => onBuildShoppingList(plan)}
-              className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-body font-semibold text-base transition-all hover:opacity-90 focus:ring-2 focus:ring-offset-2"
-              style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}
-              aria-label="Скласти список покупок на основі плану">
-              🛒 Скласти список покупок →
-            </button>
-          </div>
-        )}
+        </div>
 
         {/* Recipe picker modal */}
         {pickingSlot && (
@@ -550,11 +613,11 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
                       </div>
                       <div className="space-y-3">
                         {(() => {
-                          const filteredRecipes = EXTENDED_RECIPES.filter(r =>
+                          const filteredRecipes = selectedProgram ? EXTENDED_RECIPES.filter(r =>
                             r.mealTypes.includes(pickerMealType || 'breakfast') &&
                             r.programs.includes(selectedProgram) &&
                             r.calories <= remainingBudget * 1.1
-                          );
+                          ) : [];
 
                           if (filteredRecipes.length === 0) {
                             return (
@@ -638,22 +701,29 @@ export default function LandingPage() {
     }
   }
 
-  // When "Скласти список покупок" is clicked — build list then login or go directly
-  const handleBuildShoppingList = (plan: DayPlan[]) => {
+  // When "Створити список покупок" is clicked — build list then login or go directly
+  const handleBuildShoppingList = (plan: DayPlan[], numPersons: number, selectedProgram: ProgramType | null) => {
     const ingredientMap = new Map<string, ShoppingItem>()
+    const goalMultiplier = selectedProgram ? GOAL_MULTIPLIERS[selectedProgram] : 1.0
+
     plan.forEach(day => {
       day.meals.forEach(slot => {
         if (!slot.recipe) return
         slot.recipe.ingredients.forEach(ing => {
           const key = ing.toLowerCase()
+          // Apply persons and goal multipliers to quantity
+          const multipliedQty = numPersons * goalMultiplier
+
           if (ingredientMap.has(key)) {
-            ingredientMap.get(key)!.quantity += 1
-            ingredientMap.get(key)!.fromRecipes.push(slot.recipe!.nameUk)
+            ingredientMap.get(key)!.quantity += multipliedQty
+            if (!ingredientMap.get(key)!.fromRecipes.includes(slot.recipe!.nameUk)) {
+              ingredientMap.get(key)!.fromRecipes.push(slot.recipe!.nameUk)
+            }
           } else {
             ingredientMap.set(key, {
               id: generateId(),
               ingredientName: ing,
-              quantity: 1,
+              quantity: multipliedQty,
               unit: 'шт',
               category: 'produce',
               fromRecipes: [slot.recipe!.nameUk],
@@ -733,21 +803,22 @@ export default function LandingPage() {
         <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
           <p className="animate-fade-up text-sm tracking-widest uppercase mb-4 font-body"
             style={{ color: 'hsla(40,33%,97%,0.8)' }}>
-            Здорове харчування, нуль стресу
+            Без дієт. Без хаосу. Без "що готувати?"
           </p>
           <h1 className="animate-fade-up-delay-1 font-display text-5xl md:text-7xl leading-tight mb-6"
             style={{ color: 'var(--primary-foreground)' }}>
-            Готуйте збалансовано<br />з тим, що маєте
+            Готове меню<br />на тиждень з<br />прорахованими БЖВ
           </h1>
           <p className="animate-fade-up-delay-2 text-lg md:text-xl font-body mb-10 max-w-xl mx-auto"
             style={{ color: 'hsla(40,33%,97%,0.75)' }}>
-            Розкажіть, що у вашому холодильнику. Ми підберемо швидкі, збалансовані рецепти, які сподобаються всій родині.
+            Сніданок, обід і вечеря до 30 хвилин + автоматичний список покупок.
           </p>
-          <a href="#ingredients"
+          <button
+            onClick={() => { setMode('meal-plan'); setTimeout(() => document.getElementById('meal-planner')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80) }}
             className="animate-fade-up-delay-3 inline-flex items-center gap-2 px-8 py-4 rounded-full font-body font-semibold text-lg transition-all hover:opacity-90 focus:ring-2 focus:ring-offset-2 focus:ring-white"
             style={{ backgroundColor: 'var(--primary)', color: 'var(--primary-foreground)' }}>
-            Почати
-          </a>
+            Скласти мій план харчування
+          </button>
         </div>
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce-slow"
           style={{ color: 'hsla(40,33%,97%,0.5)' }}>
@@ -828,8 +899,8 @@ export default function LandingPage() {
         <div className="inline-flex items-center rounded-full p-1.5 border"
           style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', boxShadow: '0 1px 4px hsla(150,20%,15%,0.08)' }}>
           {([
-            { key: 'cook-now' as Mode, label: 'Готуємо зараз', icon: UtensilsCrossed },
-            { key: 'meal-plan' as Mode, label: 'Меню на тиждень', icon: CalendarDays },
+            { key: 'cook-now' as Mode, label: 'Готувати зараз', icon: UtensilsCrossed },
+            { key: 'meal-plan' as Mode, label: 'План харчування', icon: CalendarDays },
           ]).map(({ key, label, icon: Icon }) => (
             <button key={key} onClick={() => setMode(key)}
               className="relative flex items-center gap-2 px-5 py-2.5 rounded-full font-body text-sm font-semibold transition-all duration-300 focus:ring-2 focus:ring-offset-2"

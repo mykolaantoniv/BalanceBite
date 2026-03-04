@@ -307,9 +307,9 @@ function MealPlannerSection({ selectedIngredients, onBuildShoppingList }: {
                 <button
                   key={prog.value}
                   onClick={() => setSelectedProgram(prog.value)}
-                  className={`relative rounded-2xl border-2 p-5 text-left transition-all duration-200 bg-gradient-to-br ${
+                  className={`relative rounded-2xl border-2 p-5 text-left transition-all duration-200 bg-gradient-to-br ${prog.color} ${
                     isSelected
-                      ? `shadow-md scale-[1.02] ${prog.color}`
+                      ? 'shadow-md scale-[1.02]'
                       : 'hover:scale-[1.01] hover:shadow-sm border-border bg-card'
                   }`}
                 >
